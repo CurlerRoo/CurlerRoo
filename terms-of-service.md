@@ -1,6 +1,7 @@
 Terms of Service for CurlerRoo
 
 Version: 0.0.1
+
 Last Updated: 18/11/2023
 
 Welcome to CurlerRoo!
