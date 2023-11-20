@@ -103,5 +103,6 @@ You acknowledge and agree that all Feedback you give us will be the sole and exc
 
 17. Contact Information
 
-If you have any questions about these Terms or the Application, please contact CurlerRoo at [Your Contact Information].
+If you have any questions about these Terms or the Application, please contact CurlerRoo at pclover.exe@gmail.com
+
 Thank you for choosing CurlerRoo!
