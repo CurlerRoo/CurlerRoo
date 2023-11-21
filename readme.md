@@ -2,6 +2,11 @@
 
 Welcome to **CurlerRoo**, the innovative cURL text editor designed for developers who crave efficiency and precision. If you prefer writing code rather than clicking the the repetitive buttons, then CurlerRoo is made for you.
 
+### Screenshots
+
+<img width="400" alt="Screenshot 2023-11-21 at 20 25 54" src="https://github.com/CurlerRoo/CurlerRoo/assets/19520603/e1233734-f9e0-4bb9-bb7a-697704b7dde1">
+<img width="400" alt="Screenshot 2023-11-21 at 20 27 41" src="https://github.com/CurlerRoo/CurlerRoo/assets/19520603/62d4d86a-9e03-4f10-bcd3-5bf5ff7cdc62">
+
 ### Releases
 https://github.com/CurlerRoo/CurlerRoo/releases
 
