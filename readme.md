@@ -1,5 +1,7 @@
 # CurlerRoo: The Ultimate cURL Text Editor for Developers
 
+![128](https://github.com/CurlerRoo/CurlerRoo/assets/19520603/35768254-ff9d-4e5f-b9c9-d9e2397f6f6b)
+
 Welcome to **CurlerRoo**, the innovative cURL text editor designed for developers who crave efficiency and precision. If you prefer writing code rather than clicking the the repetitive buttons, then CurlerRoo is made for you.
 
 ### Screenshots
