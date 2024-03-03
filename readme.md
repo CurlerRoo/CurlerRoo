@@ -16,6 +16,10 @@ Note: Windows support is currently not available. But will be added in the futur
 
 ### Why Choose CurlerRoo?
 
+#### Advanced features, trivial learning curve
+
+By making the GUI intuitive and easy to use, CurlerRoo ensures that you can start using the app right away. Creating variables from responses, embedding them in the next request, and running multiple requests in parallel all with just a few clicks. You don't have to remember syntax of the scripts, CurlerRoo will generate them for you. Still, you can modify the generated script to suit your needs.
+
 #### Text-Based Brilliance
 
 In a world cluttered with GUIs, CurlerRoo returns to the roots of programming: text. By focusing on a text-based interface, we empower developers with the flexibility and control they need. Text is not just a medium; it's a powerful tool that lets you manipulate API requests with unmatched precision.
