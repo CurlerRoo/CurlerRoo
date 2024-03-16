@@ -1,0 +1,42 @@
+/*
+ * @NOTE: Prepend a `~` to css file paths that are in your node_modules
+ *        See https://github.com/webpack-contrib/sass-loader#imports
+ */
+body, button {
+  font-family: 'Ubuntu', sans-serif;
+  font-size: 13px;
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(127, 127, 127, 0.5);
+  border-radius: 5px;
+}
+
+.monaco-editor .view-overlays .current-line {
+  border: none !important;
+}
+
+@font-face {
+  font-family: 'RobotoMono';
+  src: url('../assets/fonts/RobotoMono-Regular.ttf');
+}
+
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('../assets/fonts/Ubuntu-Regular.ttf');
+}
+
+code {
+  font-family: 'RobotoMono', monospace;
+  font-size: 13px;
+}
+
+.rc-dialog-wrap {
+  display: flex;
+}

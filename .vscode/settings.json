@@ -1,0 +1,42 @@
+{
+  "files.associations": {
+    ".eslintrc": "jsonc",
+    ".prettierrc": "jsonc",
+    ".eslintignore": "ignore"
+  },
+
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "html",
+    "typescriptreact"
+  ],
+
+  "javascript.validate.enable": false,
+  "javascript.format.enable": false,
+  "typescript.format.enable": false,
+
+  "search.exclude": {
+    ".git": true,
+    ".eslintcache": true,
+    ".erb/dll": true,
+    "release/{build,app/dist}": true,
+    "node_modules": true,
+    "npm-debug.log.*": true,
+    "test/**/__snapshots__": true,
+    "package-lock.json": true,
+    "*.{css,sass,scss}.d.ts": true
+  },
+  "editor.fontFamily": "Ubuntu Mono",
+  "editor.codeLensFontFamily": "Roboto Mono",
+  "editor.inlayHints.fontFamily": "Roboto Mono",
+  "editor.fontSize": 15,
+  "editor.lineHeight": 1.25,
+  "editor.fontWeight": "400",
+  "editor.tabSize": 2,
+  "editor.fontVariations": false,
+  "terminal.integrated.fontFamily": "Ubuntu Mono",
+  "terminal.integrated.fontSize": 15,
+  "terminal.integrated.lineHeight": 1.25,
+  "prettier.trailingComma": "all"
+}
