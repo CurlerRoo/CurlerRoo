@@ -62,7 +62,7 @@ const getResponseHandlerTypes = ({
   }
   if (contentType.match(/application\/([\w.+-]*\+)?pdf/i)) {
     return {
-      handlerTypes: ['PDF', 'Binary'],
+      handlerTypes: ['PDF'],
     };
   }
   if (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Services } from '@services';
 import { getHeader } from '../../../../shared/get-header';
+import { COLORS, THEME } from '../../../../shared/constants/constants';
 
 export function ImageResponse({
   response,
@@ -31,6 +32,23 @@ export function ImageResponse({
       setBase64(content);
     })();
   }, [response.bodyFilePath, response.bodyBase64]);
+
+  if (!base64) {
+    return (
+      <div
+        style={{
+          padding: 10,
+          backgroundColor: `#${COLORS[THEME].WHITE}`,
+          borderRadius: 4,
+        }}
+      >
+        <p>
+          Response body is no longer available. Please try re-sending the
+          request.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <img
