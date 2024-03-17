@@ -48,6 +48,7 @@ function HomeCells() {
   const activeDocument = useSelector(
     (state: RootState) => state.activeDocument,
   );
+  const id = activeDocument?.id;
   const cells = activeDocument?.cells;
   const filePath = activeDocument?.filePath;
   const globalVariables = activeDocument?.globalVariables;
@@ -177,6 +178,7 @@ function HomeCells() {
   }
 
   if (
+    !id ||
     !cells ||
     !filePath ||
     !globalVariables ||
@@ -219,6 +221,7 @@ function HomeCells() {
           }}
         >
           <NavBar
+            id={id}
             activeCellIndex={activeCellIndex}
             cells={cells}
             filePath={filePath}

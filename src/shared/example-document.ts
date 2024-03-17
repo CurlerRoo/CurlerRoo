@@ -1,6 +1,7 @@
 import { DocType } from './types';
 
 export const exampleDocument: DocType = {
+  id: '8fa0a6be-c916-4bc7-9e14-f4f00914e4da',
   version: 2,
   type: 'notebook',
   executingAllCells: false,

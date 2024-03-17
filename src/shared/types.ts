@@ -69,6 +69,7 @@ export type CurlCellType = {
 };
 
 export const docSchema = z.object({
+  id: z.string(),
   version: z.number().default(1),
   type: z.literal('notebook'),
   executingAllCells: z.boolean().default(false),
@@ -133,6 +134,7 @@ export const docSchema = z.object({
 export type DocType = z.infer<typeof docSchema>;
 
 export const docOnDiskSchema = z.object({
+  id: z.string().optional(),
   version: z.number().default(1),
   type: z.literal('notebook'),
   cells: z.array(

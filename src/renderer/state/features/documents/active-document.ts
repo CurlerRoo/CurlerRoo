@@ -14,6 +14,7 @@ import { validateCurlSyntax } from '../../../../shared/validate-curl';
 type RandomNumber = number;
 
 export type ActiveDocumentState = null | {
+  id: string;
   version: number;
   executingAllCells: boolean;
   cells: CurlCellType[];
@@ -36,6 +37,7 @@ export const saveActiveDocument = createAsyncThunk<
     throw new Error('No file path');
   }
   await Services.writeFile(state.filePath, {
+    id: state.id,
     cells: state.cells,
     version: state.version,
     globalVariables: state.globalVariables,
@@ -260,6 +262,7 @@ export const sendAllCurls = createAsyncThunk<
 });
 
 const initialState = {
+  id: v4(),
   version: 2,
   executingAllCells: false,
   cells: [

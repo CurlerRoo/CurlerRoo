@@ -2,11 +2,13 @@ import _ from 'lodash';
 import { DocOnDiskType, DocType, docSchema } from './types';
 import { v4 } from 'uuid';
 
+// migrate here
 export const getDocFromDocOnDisk = (docOnDisk: DocOnDiskType): DocType => {
   const parsed = _.flow(
     (doc: DocOnDiskType): DocType => {
       return {
         ...doc,
+        id: doc.id || v4(),
         executingAllCells: false,
         cells: doc.cells.map((cell) => ({
           ...cell,

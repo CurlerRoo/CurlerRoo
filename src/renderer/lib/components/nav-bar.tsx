@@ -16,6 +16,7 @@ import { CurlCellType, Variable } from '../../../shared/types';
 const textButtonStyle = {};
 
 export function NavBar({
+  id,
   activeCellIndex,
   cells,
   filePath,
@@ -23,6 +24,7 @@ export function NavBar({
   executingAllCells,
   selectedDirectory,
 }: {
+  id: string;
   activeCellIndex: number;
   cells: CurlCellType[];
   filePath: string;
@@ -37,6 +39,7 @@ export function NavBar({
       return;
     }
     await Services.writeFile(filePath, {
+      id,
       version: 2,
       cells,
       globalVariables,
@@ -57,7 +60,7 @@ export function NavBar({
         });
       });
     });
-  }, [cells, filePath, globalVariables, executingAllCells]);
+  }, [id, cells, filePath, globalVariables, executingAllCells]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {

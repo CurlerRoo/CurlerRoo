@@ -134,6 +134,7 @@ export const createFileWithContent = createAsyncThunk<
     })();
     await thunkAPI.dispatch(loadDirectoryInfo());
     await Services.writeFile(createResult.filePath, {
+      id: content.id,
       cells: content.cells,
       version: content.version,
       globalVariables: content.globalVariables,

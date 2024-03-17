@@ -205,6 +205,7 @@ export function DirTree({
                             ) {
                               await dispatch(
                                 setActiveDocument({
+                                  id: v4(),
                                   version: 2,
                                   filePath: null,
                                   executingAllCells: false,
@@ -574,6 +575,7 @@ export function FileList({
       if (type === 'empty') {
         return dispatch(
           setActiveDocument({
+            id: v4(),
             version: 2,
             filePath: selectedSubDirectoryOrFile,
             executingAllCells: false,
@@ -622,6 +624,7 @@ export function FileList({
       if (type === 'valid' && document) {
         return dispatch(
           setActiveDocument({
+            id: document.id,
             version: 2,
             filePath: selectedSubDirectoryOrFile,
             executingAllCells: document.executingAllCells,
