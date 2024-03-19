@@ -11,6 +11,7 @@ import {
 } from '../../state/features/updates/updates';
 import { modal } from '../components/modal';
 import { APP_VERSION } from '@constants';
+import { useInterval } from 'react-use';
 
 export const useAutoCheckForUpdates = () => {
   const dispatch: AppDispatch = useDispatch();
@@ -23,20 +24,23 @@ export const useAutoCheckForUpdates = () => {
     dispatch(resetCheckForUpdatesProcess());
   }, [dispatch]);
 
-  useEffect(() => {
-    (async () => {
-      const checkForUpdatesResult = await dispatch(checkForUpdates()).then(
-        (m) =>
-          m as {
-            payload: Awaited<ReturnType<typeof Services.checkForUpdates>>;
-            error: any;
-          },
-      );
-      if (checkForUpdatesResult.payload?.updateInfo) {
-        setUpdateInfo(checkForUpdatesResult.payload?.updateInfo);
-      }
-    })();
-  }, [dispatch]);
+  useInterval(
+    () => {
+      (async () => {
+        const checkForUpdatesResult = await dispatch(checkForUpdates()).then(
+          (m) =>
+            m as {
+              payload: Awaited<ReturnType<typeof Services.checkForUpdates>>;
+              error: any;
+            },
+        );
+        if (checkForUpdatesResult.payload?.updateInfo) {
+          setUpdateInfo(checkForUpdatesResult.payload?.updateInfo);
+        }
+      })();
+    },
+    1000 * 60 * 60 * 2,
+  );
 
   useEffect(() => {
     if (!updateInfo) {
