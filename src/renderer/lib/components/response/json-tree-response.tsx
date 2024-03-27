@@ -584,8 +584,6 @@ export function JsonTreeResponse({
     [textSearchResult],
   );
 
-  const [hoverTree, setHoverTree] = useState<string | null>(null);
-
   const scrollToLine = lineByHighlightIndex?.[searchResultSelectedIndex ?? 0];
 
   debugLog('HVH', 'contentLength', contentLength);
@@ -604,7 +602,7 @@ export function JsonTreeResponse({
   return (
     <HotkeyOnFocus
       style={{
-        height: '100%',
+        height: 'calc(100% - 10px)',
         width: '100%',
         position: 'relative',
       }}
@@ -629,7 +627,7 @@ export function JsonTreeResponse({
       <div
         style={{
           width: '100%',
-          height: 'calc(100% - 20px)',
+          height: '100%',
           outline: 'none',
         }}
         tabIndex={0}
@@ -663,51 +661,14 @@ export function JsonTreeResponse({
                   getContextMenuProps: contextMenu.getProps,
                   searchResultSelectedIndex,
                 });
-                const getDataCustomTree = (
-                  target: HTMLElement,
-                ): string | null => {
-                  const tree = target.getAttribute('data-custom-tree');
-                  if (tree) {
-                    return tree;
-                  }
-                  if (target.children.length > 0) {
-                    return getDataCustomTree(target.children[0] as HTMLElement);
-                  }
-                  return null;
-                };
                 return (
-                  <div
-                    onMouseEnter={(e) => {
-                      const tree = getDataCustomTree(e.target as HTMLElement);
-                      setHoverTree(tree);
-                    }}
-                    onMouseLeave={(e) => {
-                      const tree = getDataCustomTree(e.target as HTMLElement);
-                      if (tree === hoverTree) {
-                        setHoverTree(null);
-                      }
-                    }}
-                    style={{ display: 'inline-block' }}
-                    key={token.index}
-                  >
-                    {value}
-                  </div>
+                  <React.Fragment key={token.index}>{value}</React.Fragment>
                 );
               }),
             };
           }}
           scrollToLine={scrollToLine}
         />
-      </div>
-      <div
-        style={{
-          height: 20,
-          display: 'flex',
-          alignItems: 'center',
-          color: `#${COLORS[THEME].BLACK_EAL}`,
-        }}
-      >
-        {hoverTree}
       </div>
     </HotkeyOnFocus>
   );
