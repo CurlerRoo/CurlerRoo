@@ -230,6 +230,23 @@ export const formatCurl = (curl: string, options?: FormatCurlOptions) => {
             return value.trim();
           })();
 
+          const { shouldQuotePrefix, shouldQuotePostfix } = (() => {
+            if (
+              part.type === 'embedded-value' &&
+              !part.value.includes("'") &&
+              !part.value.includes('"')
+            ) {
+              return {
+                shouldQuotePrefix: '"',
+                shouldQuotePostfix: '"',
+              };
+            }
+            return {
+              shouldQuotePrefix: '',
+              shouldQuotePostfix: '',
+            };
+          })();
+
           const preformatted = [
             acc.formatted,
             shouldHaveSpace && ' ',
@@ -244,7 +261,7 @@ export const formatCurl = (curl: string, options?: FormatCurlOptions) => {
                   jsonString: part.value,
                   initialIndentLevel: 1,
                 })
-              : part.value,
+              : `${shouldQuotePrefix}${part.value}${shouldQuotePostfix}`,
             shouldHaveAddedOptions &&
               _.entries(options?.addOptions)
                 .map(([key, value]) => ` ${key} ${value}`)
