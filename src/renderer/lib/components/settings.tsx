@@ -7,7 +7,7 @@ import { modal } from './modal';
 import { AppDispatch, RootState } from '../../state/store';
 import {
   allowAnalytics,
-  setLineWrappingInEditor,
+  setWordWrappingInEditor,
 } from '../../state/features/user/user';
 import {
   APP_VERSION,
@@ -150,10 +150,16 @@ export function UpdateAvailableModalContent({
 }
 
 export function SettingsModalContent() {
-  const { allowedAnalytics, lineWrappingInEditor } = useSelector(
+  const dispatch: AppDispatch = useDispatch();
+  const { allowedAnalytics, wordWrappingInEditor } = useSelector(
     (state: RootState) => state.user,
   );
-  const dispatch: AppDispatch = useDispatch();
+  useEffect(() => {
+    if (wordWrappingInEditor === undefined) {
+      // Set default value to true if unset (user upgrading from older version)
+      dispatch(setWordWrappingInEditor(true));
+    }
+  }, [dispatch, wordWrappingInEditor]);
   const { downloadUpdatesProgress, updateStatus } = useSelector(
     (state: RootState) => state.updates,
   );
@@ -346,9 +352,9 @@ export function SettingsModalContent() {
         }}
       >
         <Switch
-          checked={lineWrappingInEditor ?? false}
+          checked={wordWrappingInEditor ?? false}
           onChange={(checked) => {
-            dispatch(setLineWrappingInEditor(checked));
+            dispatch(setWordWrappingInEditor(checked));
           }}
         />
         <div>Enable word wrap in the editor</div>

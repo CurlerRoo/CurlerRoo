@@ -5,10 +5,12 @@ export type UserState = {
   acceptedTermsOfServiceVersion?: string;
   acceptedPrivacyPolicyVersion?: string;
   allowedAnalytics?: boolean;
-  lineWrappingInEditor: boolean;
+  wordWrappingInEditor?: boolean;
 };
 
-const initialState = {} as UserState;
+const initialState = {
+  wordWrappingInEditor: true,
+} as UserState;
 
 export const userSlice = createSlice({
   name: 'user',
@@ -22,13 +24,13 @@ export const userSlice = createSlice({
       state.allowedAnalytics = payload;
     },
     reset: () => initialState,
-    setLineWrappingInEditor: (state, { payload }: { payload: boolean }) => {
-      state.lineWrappingInEditor = payload;
+    setWordWrappingInEditor: (state, { payload }: { payload: boolean }) => {
+      state.wordWrappingInEditor = payload;
     },
   },
 });
 
-export const { acceptTerms, allowAnalytics, reset, setLineWrappingInEditor } =
+export const { acceptTerms, allowAnalytics, reset, setWordWrappingInEditor } =
   userSlice.actions;
 
 export default userSlice.reducer;

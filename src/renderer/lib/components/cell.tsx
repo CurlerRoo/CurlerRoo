@@ -66,17 +66,10 @@ const Script = ({
 }) => {
   const dispatch: AppDispatch = useDispatch();
   const [isMounted, setIsMounted] = useState(false);
-  const { lineWrappingInEditor } = useSelector(
+  const { wordWrappingInEditor } = useSelector(
     (state: RootState) => state.user,
   );
-
-  const lineHeight = 20;
-  const numberOfLines = scriptText.split('\n').length;
-  const editorMinHeight = lineHeight * 1;
-  const editorHeight = Math.max(
-    (numberOfLines + 1) * lineHeight,
-    editorMinHeight,
-  );
+  const [editorHeight, setEditorHeight] = useState(60);
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monaco | null>(null);
@@ -86,6 +79,10 @@ const Script = ({
     }
     editorRef.current.onDidFocusEditorText(() => {
       dispatch(setActiveCellIndex(cellIndex));
+    });
+    editorRef.current.onDidContentSizeChange((e) => {
+      const height = e.contentHeight < 40 ? 60 : e.contentHeight + 20;
+      setEditorHeight(height);
     });
   }, [dispatch, cellIndex, isMounted]);
 
@@ -307,12 +304,11 @@ declare function json_body(path: string): any;
           },
           scrollBeyondLastLine: false,
           overviewRulerLanes: 0,
-          lineNumbers: lineWrappingInEditor ? 'on' : 'off',
+          lineNumbers: wordWrappingInEditor ? 'on' : 'off',
           folding: false,
           fontFamily: 'RobotoMono',
           fontSize: 13,
-          wordWrap: lineWrappingInEditor ? 'on' : 'off',
-          wrappingStrategy: 'advanced',
+          wordWrap: wordWrappingInEditor ? 'on' : 'off',
         }}
         height={editorHeight}
         onMount={(_editor, _monaco) => {
@@ -369,6 +365,7 @@ export function Cell({
   const postScriptText = cell.post_scripts.join('\n');
 
   const [isMounted, setIsMounted] = useState(false);
+  const [curlEditorHeight, setCurlEditorHeight] = useState(60);
 
   const curlEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(
     null,
@@ -381,12 +378,16 @@ export function Cell({
     curlEditorRef.current.onDidFocusEditorText(() => {
       dispatch(setActiveCellIndex(cellIndex));
     });
+    curlEditorRef.current.onDidContentSizeChange((e) => {
+      const height = e.contentHeight < 40 ? 60 : e.contentHeight + 20;
+      setCurlEditorHeight(height);
+    });
   }, [dispatch, cellIndex, isMounted]);
 
   const forceRefocusActiveCell = useSelector(
     (state: RootState) => state.activeDocument?.forceRefocusActiveCell,
   );
-  const { lineWrappingInEditor } = useSelector(
+  const { wordWrappingInEditor } = useSelector(
     (state: RootState) => state.user,
   );
 
@@ -410,15 +411,6 @@ export function Cell({
       });
     }
   }, [isFocusing, forceRefocusActiveCell]);
-
-  const lineHeight = 20;
-
-  const curlNumberOfLines = curlText.split('\n').length;
-  const curlEditorMinHeight = lineHeight * 3;
-  const curlEditorHeight = Math.max(
-    (curlNumberOfLines + 1) * lineHeight,
-    curlEditorMinHeight,
-  );
 
   const validateCurl = useCallback(
     async (e: string) => {
@@ -1036,12 +1028,11 @@ export function Cell({
               },
               scrollBeyondLastLine: false,
               overviewRulerLanes: 0,
-              lineNumbers: lineWrappingInEditor ? 'on' : 'off',
+              lineNumbers: wordWrappingInEditor ? 'on' : 'off',
               folding: false,
               fontFamily: 'RobotoMono',
               fontSize: 13,
-              wordWrap: lineWrappingInEditor ? 'on' : 'off',
-              wrappingStrategy: 'advanced',
+              wordWrap: wordWrappingInEditor ? 'on' : 'off',
             }}
             value={curlText}
             onChange={(e) => {
