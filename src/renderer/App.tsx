@@ -1,5 +1,6 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import {
+  VscAdd,
   VscDesktopDownload,
   VscExtensions,
   VscFeedback,
@@ -28,14 +29,17 @@ import {
 } from './state/features/selected-directory/selected-directory';
 import { COLORS, THEME, ENABLE_UPDATE_FEATURE, PLATFORM } from '@constants';
 import { useAutoCheckForUpdates } from './lib/hooks/use-auto-check-for-updates';
-import { exampleDocument } from '../shared/example-document';
 import { modal } from './lib/components/modal';
 import { TextButton } from './lib/components/text-button';
-import { clearVariables } from './state/features/documents/active-document';
+import {
+  addVariable,
+  clearVariables,
+} from './state/features/documents/active-document';
 import isMobile from 'is-mobile';
 import { showChromeExtensionNotice } from './lib/components/chrome-extension-notice';
 import { extInstalled } from './services/services-on-ext';
 import { simpleExampleDocument } from '../shared/simple-example-document';
+import { prompt } from './lib/components/input-prompt';
 
 function HomeCells() {
   const dispatch: AppDispatch = useDispatch();
@@ -271,6 +275,51 @@ function HomeCells() {
                   />
                 );
               }),
+              <TextButton
+                key="add-variable"
+                icon={VscAdd}
+                onClick={async () => {
+                  const [name, value] = await prompt([
+                    {
+                      label: 'Name:',
+                      onConfirm: async (value) => {
+                        // value should be a valid variable name
+                        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/g.test(value || '')) {
+                          throw new Error('Invalid variable name');
+                        }
+                        return value;
+                      },
+                    },
+                    {
+                      label: 'Value:',
+                      onConfirm: async (value) => {
+                        if (!value) {
+                          throw new Error('Value cannot be empty');
+                        }
+                        return value;
+                      },
+                    },
+                  ]);
+                  if (typeof name !== 'string') {
+                    throw new Error('Invalid variable name');
+                  }
+                  if (typeof value !== 'string') {
+                    throw new Error('Invalid variable value');
+                  }
+                  dispatch(
+                    addVariable({
+                      cellIndex: activeCellIndex,
+                      variable: {
+                        key: name,
+                        value,
+                        source: 'manual',
+                      },
+                    }),
+                  );
+                }}
+              >
+                Add
+              </TextButton>,
               globalVariables.length > 0 ? (
                 <TextButton
                   key="clear-all"

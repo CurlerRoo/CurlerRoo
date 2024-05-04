@@ -50,7 +50,7 @@ export function ColorfulButton({
         >
           <div
             style={{
-              backgroundColor: `#${COLORS[THEME].GREY}`,
+              backgroundColor: `#${COLORS[THEME].GREY0}`,
               padding: 5,
               borderRadius: 4,
             }}

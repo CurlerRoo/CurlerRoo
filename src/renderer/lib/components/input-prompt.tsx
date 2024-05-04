@@ -87,18 +87,14 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          gap: 10,
         },
       }}
     >
       {params.map(({ label }, i) => {
         const error = errorMessages[i];
         return (
-          <Fragment key={label}>
-            {error && (
-              <div style={{ color: `#${COLORS[THEME].RED}`, marginBottom: 10 }}>
-                {error}
-              </div>
-            )}
+          <div key={label}>
             <span>{label}</span>
             <div style={{ height: 10 }} />
             <input
@@ -124,11 +120,14 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
                 }
               }}
             />
-          </Fragment>
+            {error && (
+              <div style={{ color: `#${COLORS[THEME].RED}`, marginBottom: 10 }}>
+                {error}
+              </div>
+            )}
+          </div>
         );
       })}
-
-      <div style={{ height: 10 }} />
       <TextButton disabled={!visible} onClick={submit}>
         Ok
       </TextButton>

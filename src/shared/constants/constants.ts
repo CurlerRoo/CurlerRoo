@@ -12,6 +12,7 @@ type THEME_VALUES = {
   RED: string;
   BACKGROUND: string;
   BACKGROUND_HIGHLIGHT: string;
+  GREY0: string;
   GREY: string;
   GREY2: string;
   MID_BLUE: string;
@@ -30,6 +31,7 @@ export const COLORS: {
     RED: 'CF222E',
     BACKGROUND: 'E8E8E8',
     BACKGROUND_HIGHLIGHT: 'D8D8D8',
+    GREY0: '666666',
     GREY: '888888',
     GREY2: 'c8c8c8',
     MID_BLUE: '007bff',
@@ -44,6 +46,7 @@ export const COLORS: {
     RED: 'CF222E',
     BACKGROUND: 'E8E8E8',
     BACKGROUND_HIGHLIGHT: 'D8D8D8',
+    GREY0: '666666',
     GREY: '888888',
     GREY2: 'c8c8c8',
     MID_BLUE: '007bff',
@@ -54,7 +57,7 @@ export const COLORS: {
   },
 };
 
-export const APP_VERSION = '0.1.8';
+export const APP_VERSION = '0.1.9';
 export const TERMS_OF_SERVICE_VERSION = '0.0.1';
 export const PRIVACY_POLICY_VERSION = '0.0.1';
 export const CURLERROO_FILE_EXTENSION = 'crr';
