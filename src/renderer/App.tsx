@@ -284,7 +284,7 @@ function HomeCells() {
                       label: 'Name:',
                       onConfirm: async (value) => {
                         // value should be a valid variable name
-                        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/g.test(value || '')) {
+                        if (!/^[a-zA-Z][a-zA-Z0-9_]*$/g.test(value || '')) {
                           throw new Error('Invalid variable name');
                         }
                         return value;
