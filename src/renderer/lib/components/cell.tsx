@@ -66,6 +66,9 @@ const Script = ({
 }) => {
   const dispatch: AppDispatch = useDispatch();
   const [isMounted, setIsMounted] = useState(false);
+  const { lineWrappingInEditor } = useSelector(
+    (state: RootState) => state.user,
+  );
 
   const lineHeight = 20;
   const numberOfLines = scriptText.split('\n').length;
@@ -304,10 +307,12 @@ declare function json_body(path: string): any;
           },
           scrollBeyondLastLine: false,
           overviewRulerLanes: 0,
-          lineNumbers: 'off',
+          lineNumbers: lineWrappingInEditor ? 'on' : 'off',
           folding: false,
           fontFamily: 'RobotoMono',
           fontSize: 13,
+          wordWrap: lineWrappingInEditor ? 'on' : 'off',
+          wrappingStrategy: 'advanced',
         }}
         height={editorHeight}
         onMount={(_editor, _monaco) => {
@@ -380,6 +385,9 @@ export function Cell({
 
   const forceRefocusActiveCell = useSelector(
     (state: RootState) => state.activeDocument?.forceRefocusActiveCell,
+  );
+  const { lineWrappingInEditor } = useSelector(
+    (state: RootState) => state.user,
   );
 
   const cursorPositionRef = useRef<{
@@ -1028,10 +1036,12 @@ export function Cell({
               },
               scrollBeyondLastLine: false,
               overviewRulerLanes: 0,
-              lineNumbers: 'off',
+              lineNumbers: lineWrappingInEditor ? 'on' : 'off',
               folding: false,
               fontFamily: 'RobotoMono',
               fontSize: 13,
+              wordWrap: lineWrappingInEditor ? 'on' : 'off',
+              wrappingStrategy: 'advanced',
             }}
             value={curlText}
             onChange={(e) => {

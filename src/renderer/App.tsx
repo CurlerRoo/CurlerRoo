@@ -26,13 +26,7 @@ import {
   selectDirectory,
   setSelectedSubDirectoryOrFile,
 } from './state/features/selected-directory/selected-directory';
-import {
-  COLORS,
-  THEME,
-  ENABLE_SETTINGS_FEATURE,
-  ENABLE_UPDATE_FEATURE,
-  PLATFORM,
-} from '@constants';
+import { COLORS, THEME, ENABLE_UPDATE_FEATURE, PLATFORM } from '@constants';
 import { useAutoCheckForUpdates } from './lib/hooks/use-auto-check-for-updates';
 import { exampleDocument } from '../shared/example-document';
 import { modal } from './lib/components/modal';
@@ -490,21 +484,19 @@ function Home() {
               <VscFeedback size={16} />
               Feedback
             </div>
-            {ENABLE_SETTINGS_FEATURE && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: 10,
-                  cursor: 'pointer',
-                }}
-                onClick={showSettings}
-              >
-                <VscSettingsGear size={16} />
-                Settings
-              </div>
-            )}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: 10,
+                cursor: 'pointer',
+              }}
+              onClick={showSettings}
+            >
+              <VscSettingsGear size={16} />
+              Settings
+            </div>
           </div>
         </div>
         <div

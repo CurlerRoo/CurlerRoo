@@ -5,6 +5,7 @@ export type UserState = {
   acceptedTermsOfServiceVersion?: string;
   acceptedPrivacyPolicyVersion?: string;
   allowedAnalytics?: boolean;
+  lineWrappingInEditor: boolean;
 };
 
 const initialState = {} as UserState;
@@ -21,9 +22,13 @@ export const userSlice = createSlice({
       state.allowedAnalytics = payload;
     },
     reset: () => initialState,
+    setLineWrappingInEditor: (state, { payload }: { payload: boolean }) => {
+      state.lineWrappingInEditor = payload;
+    },
   },
 });
 
-export const { acceptTerms, allowAnalytics, reset } = userSlice.actions;
+export const { acceptTerms, allowAnalytics, reset, setLineWrappingInEditor } =
+  userSlice.actions;
 
 export default userSlice.reducer;

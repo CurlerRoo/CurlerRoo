@@ -46,8 +46,6 @@ const OS = (() => {
 export const PATH_SEPARATOR = OS === 'win32' ? '\\' : '/';
 
 export const ENABLE_UPDATE_FEATURE = false;
-export const ENABLE_SETTINGS_FEATURE =
-  ENABLE_TELEMETRY_FEATURE || ENABLE_UPDATE_FEATURE;
 export const USE_IN_MEMORY_FILE_SYSTEM = true;
 export const SEND_CURL_ENDPOINT = 'https://api.curlerroo.com/execute-curl';
 export const PLATFORM: 'browser' | 'electron' = 'browser';

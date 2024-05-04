@@ -5,7 +5,10 @@ import 'rc-switch/assets/index.css';
 import { Services } from '@services';
 import { modal } from './modal';
 import { AppDispatch, RootState } from '../../state/store';
-import { allowAnalytics } from '../../state/features/user/user';
+import {
+  allowAnalytics,
+  setLineWrappingInEditor,
+} from '../../state/features/user/user';
 import {
   APP_VERSION,
   COLORS,
@@ -147,7 +150,9 @@ export function UpdateAvailableModalContent({
 }
 
 export function SettingsModalContent() {
-  const { allowedAnalytics } = useSelector((state: RootState) => state.user);
+  const { allowedAnalytics, lineWrappingInEditor } = useSelector(
+    (state: RootState) => state.user,
+  );
   const dispatch: AppDispatch = useDispatch();
   const { downloadUpdatesProgress, updateStatus } = useSelector(
     (state: RootState) => state.updates,
@@ -332,6 +337,22 @@ export function SettingsModalContent() {
           </div>
         </>
       )}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <Switch
+          checked={lineWrappingInEditor ?? false}
+          onChange={(checked) => {
+            dispatch(setLineWrappingInEditor(checked));
+          }}
+        />
+        <div>Enable word wrap in the editor</div>
+      </div>
       {ENABLE_TELEMETRY_FEATURE && (
         <div
           style={{
