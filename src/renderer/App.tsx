@@ -6,6 +6,8 @@ import {
   VscFeedback,
   VscQuestion,
   VscSettingsGear,
+  VscStarEmpty,
+  VscStarFull,
   VscTrash,
 } from 'react-icons/vsc';
 import { useEffect, useMemo } from 'react';
@@ -40,6 +42,7 @@ import { showChromeExtensionNotice } from './lib/components/chrome-extension-not
 import { extInstalled } from './services/services-on-ext';
 import { simpleExampleDocument } from '../shared/simple-example-document';
 import { prompt } from './lib/components/input-prompt';
+import GitHubButton from 'react-github-btn';
 
 function HomeCells() {
   const dispatch: AppDispatch = useDispatch();
@@ -447,6 +450,18 @@ function Home() {
             <FileList activeDocument={activeDocument} />
           </div>
           <div>
+            {PLATFORM === 'browser' ? (
+              <GitHubButton
+                href="https://github.com/CurlerRoo/CurlerRoo"
+                data-color-scheme="no-preference: light; light: light; dark: dark;"
+                data-icon="octicon-star"
+                data-size="large"
+                data-show-count="true"
+                aria-label="Star CurlerRoo/CurlerRoo on GitHub"
+              >
+                &nbsp;&nbsp;Star on GitHub
+              </GitHubButton>
+            ) : null}
             {PLATFORM === 'browser' ? (
               <div
                 style={{
