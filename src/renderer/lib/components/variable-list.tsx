@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Tooltip from 'rc-tooltip';
 import 'rc-tooltip/assets/bootstrap.css';
 import {
+  addVariable,
   deleteVariable,
   forceRefocusActiveCell,
   updateCell,
@@ -9,9 +10,10 @@ import {
 import { COLORS, THEME } from '@constants';
 import { RootState } from '../../state/store';
 import { insertVariableToCurl } from '../../../shared/insert-variable-to-curl';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Notification from 'rc-notification';
 import 'rc-notification/assets/index.css';
+import { prompt } from './input-prompt';
 
 export function ColorfulButton({
   name,
@@ -27,6 +29,12 @@ export function ColorfulButton({
   const cell = useSelector(
     (state: RootState) => state.activeDocument?.cells[cellIndex!],
   );
+  const [visible, setVisible] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (visible === false) {
+      setVisible(undefined);
+    }
+  }, [visible, setVisible]);
   const curl = useMemo(() => cell?.source.join('\n') || '', [cell]);
   const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
 
@@ -36,6 +44,7 @@ export function ColorfulButton({
 
   return (
     <Tooltip
+      visible={visible}
       overlayInnerStyle={{
         minHeight: 0,
       }}
@@ -46,8 +55,86 @@ export function ColorfulButton({
           style={{
             maxWidth: 400,
             wordWrap: 'break-word',
+            padding: '2px 0',
           }}
         >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row-reverse',
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+                color: `#${COLORS[THEME].BLACK_EAL}`,
+                padding: '0 5px',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+              onClick={async () => {
+                setVisible(false);
+                const [_name, _value] = await prompt([
+                  {
+                    label: 'Name:',
+                    defaultValue: name,
+                    onConfirm: async (value) => {
+                      // value should be a valid variable name
+                      if (!/^[a-zA-Z][a-zA-Z0-9_]*$/g.test(value || '')) {
+                        throw new Error('Invalid variable name');
+                      }
+                      return value;
+                    },
+                  },
+                  {
+                    label: 'Value:',
+                    defaultValue: stringValue,
+                    type: 'textarea',
+                    onConfirm: async (value) => {
+                      if (!value) {
+                        throw new Error('Value cannot be empty');
+                      }
+                      return value;
+                    },
+                  },
+                ]);
+                if (typeof _name !== 'string') {
+                  throw new Error('Invalid variable name');
+                }
+                if (typeof _value !== 'string') {
+                  throw new Error('Invalid variable value');
+                }
+                dispatch(
+                  addVariable({
+                    variable: {
+                      key: _name,
+                      value: _value,
+                      source: 'manual',
+                    },
+                  }),
+                );
+              }}
+            >
+              Edit
+            </div>
+            <div
+              style={{
+                backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+                color: `#${COLORS[THEME].BLACK_EAL}`,
+                padding: '0 5px',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                navigator.clipboard.writeText(stringValue);
+                setVisible(false);
+              }}
+            >
+              Copy
+            </div>
+          </div>
+          <div style={{ height: 5 }} />
           <div
             style={{
               backgroundColor: `#${COLORS[THEME].GREY0}`,

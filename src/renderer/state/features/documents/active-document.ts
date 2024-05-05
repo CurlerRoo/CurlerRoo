@@ -467,10 +467,7 @@ export const activeDocumentSlice = createSlice({
       state.cells[action.payload.cellIndex].sending_id = undefined;
       state.executingAllCells = false;
     },
-    addVariable: (
-      state,
-      action: PayloadAction<{ cellIndex: number; variable: Variable }>,
-    ) => {
+    addVariable: (state, action: PayloadAction<{ variable: Variable }>) => {
       if (!state) {
         throw new Error('No active document');
       }

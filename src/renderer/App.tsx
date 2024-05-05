@@ -292,6 +292,7 @@ function HomeCells() {
                     },
                     {
                       label: 'Value:',
+                      type: 'textarea',
                       onConfirm: async (value) => {
                         if (!value) {
                           throw new Error('Value cannot be empty');
@@ -308,7 +309,6 @@ function HomeCells() {
                   }
                   dispatch(
                     addVariable({
-                      cellIndex: activeCellIndex,
                       variable: {
                         key: name,
                         value,

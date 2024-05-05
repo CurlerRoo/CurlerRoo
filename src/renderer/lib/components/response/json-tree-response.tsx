@@ -423,7 +423,6 @@ export function JsonTreeResponse({
       );
       dispatch(
         addVariable({
-          cellIndex: activeCellIndex,
           variable: {
             key: name,
             value,

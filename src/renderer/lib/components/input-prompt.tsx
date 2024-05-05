@@ -8,6 +8,8 @@ import { COLORS, THEME } from '@constants';
 export type InputPromptProps = {
   params: {
     label: string;
+    defaultValue?: string;
+    type?: 'text' | 'textarea';
     onConfirm: (value: string | null) => Promise<void>;
   }[];
   onClose: () => void;
@@ -17,7 +19,7 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
   const [visible, setVisible] = useState(true);
   const disableClickRef = useRef(false);
   const [errorMessages, setErrorMessages] = useState([] as string[]);
-  const [values, setValues] = useState([] as string[]);
+  const [values, setValues] = useState(params.map((m) => m.defaultValue || ''));
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -91,35 +93,65 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
         },
       }}
     >
-      {params.map(({ label }, i) => {
+      {params.map(({ label, type }, i) => {
         const error = errorMessages[i];
         return (
           <div key={label}>
             <span>{label}</span>
             <div style={{ height: 10 }} />
-            <input
-              style={{
-                outline: 'none',
-                height: 20,
-                borderRadius: 4,
-                border: `1px solid #${error ? COLORS[THEME].RED : COLORS[THEME].GREY}`,
-              }}
-              ref={i === 0 ? inputRef : undefined}
-              value={values[i] || ''}
-              onChange={(e) =>
-                setValues([
-                  ...values.slice(0, i),
-                  e.target.value,
-                  ...values.slice(i + 1),
-                ])
-              }
-              // submit on enter
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  submit();
+            {!type || type === 'text' ? (
+              <input
+                spellCheck={false}
+                style={{
+                  width: 200,
+                  outline: 'none',
+                  height: 20,
+                  borderRadius: 4,
+                  border: `1px solid #${error ? COLORS[THEME].RED : COLORS[THEME].GREY}`,
+                }}
+                ref={i === 0 ? inputRef : undefined}
+                value={values[i] || ''}
+                onChange={(e) =>
+                  setValues([
+                    ...values.slice(0, i),
+                    e.target.value,
+                    ...values.slice(i + 1),
+                  ])
                 }
-              }}
-            />
+                // submit on enter
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    submit();
+                  }
+                }}
+              />
+            ) : (
+              <textarea
+                spellCheck={false}
+                style={{
+                  resize: 'none',
+                  outline: 'none',
+                  height: 100,
+                  width: 200,
+                  borderRadius: 4,
+                  border: `1px solid #${error ? COLORS[THEME].RED : COLORS[THEME].GREY}`,
+                }}
+                value={values[i] || ''}
+                onChange={(e) =>
+                  setValues([
+                    ...values.slice(0, i),
+                    e.target.value,
+                    ...values.slice(i + 1),
+                  ])
+                }
+                // submit on enter
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    submit();
+                  }
+                }}
+              />
+            )}
             {error && (
               <div style={{ color: `#${COLORS[THEME].RED}`, marginBottom: 10 }}>
                 {error}
@@ -138,6 +170,8 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
 export const prompt = async (
   params: {
     label: string;
+    defaultValue?: string;
+    type?: 'text' | 'textarea';
     onConfirm?: (value: string | null) => Promise<string | null>;
   }[],
 ) => {
@@ -154,6 +188,8 @@ export const prompt = async (
       params={params.map((param, i) => {
         return {
           label: param.label,
+          defaultValue: param.defaultValue,
+          type: param.type,
           onConfirm: async (value) => {
             await param.onConfirm?.(value);
             resolves[i](value);
