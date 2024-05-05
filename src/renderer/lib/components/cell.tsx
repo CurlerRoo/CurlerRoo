@@ -302,6 +302,7 @@ declare function json_body(path: string): any;
           scrollbar: {
             handleMouseWheel: false,
           },
+          lineNumbersMinChars: 3,
           scrollBeyondLastLine: false,
           overviewRulerLanes: 0,
           lineNumbers: wordWrappingInEditor ? 'on' : 'off',
@@ -1026,6 +1027,7 @@ export function Cell({
               scrollbar: {
                 handleMouseWheel: false,
               },
+              lineNumbersMinChars: 3,
               scrollBeyondLastLine: false,
               overviewRulerLanes: 0,
               lineNumbers: wordWrappingInEditor ? 'on' : 'off',
@@ -1075,7 +1077,11 @@ export function Cell({
                     foreground: COLORS[THEME].GREEN,
                   },
                 ],
-                colors: {},
+                colors: {
+                  'editorLineNumber.foreground': `#${COLORS[THEME].GREY1}`,
+                  'editorLineNumber.dimmedForeground': `#${COLORS[THEME].GREY1}`,
+                  'editorLineNumber.activeForeground': `#${COLORS[THEME].GREY1}`,
+                },
               });
               _editor.updateOptions({
                 tabSize: 2,

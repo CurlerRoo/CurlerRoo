@@ -14,6 +14,7 @@ type THEME_VALUES = {
   BACKGROUND_HIGHLIGHT: string;
   GREY0: string;
   GREY: string;
+  GREY1: string;
   GREY2: string;
   MID_BLUE: string;
   BLACK_EAL: string;
@@ -33,6 +34,7 @@ export const COLORS: {
     BACKGROUND_HIGHLIGHT: 'D8D8D8',
     GREY0: '666666',
     GREY: '888888',
+    GREY1: 'aaaaaa',
     GREY2: 'c8c8c8',
     MID_BLUE: '007bff',
     BLACK_EAL: '444444',
@@ -48,6 +50,7 @@ export const COLORS: {
     BACKGROUND_HIGHLIGHT: 'D8D8D8',
     GREY0: '666666',
     GREY: '888888',
+    GREY1: 'aaaaaa',
     GREY2: 'c8c8c8',
     MID_BLUE: '007bff',
     BLACK_EAL: '444444',
