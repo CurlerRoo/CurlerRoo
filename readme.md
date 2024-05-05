@@ -4,14 +4,22 @@
 
 Welcome to CurlerRoo, an open-source cURL text editor designed for developers who love using cURL and prefer working with text rather than complicated GUIs.
 
+### Why?
+- Focus on what matters: CurlerRoo allows you to quickly create, edit, save, and send cURL commands. Just cURL, no need to deal with complicated GUIs.
+- Ease of use: Just copy and paste your cURL command into CurlerRoo text editor and hit send. It's that simple. You don't need to learn a new tool or spend time configuring it.
+- Your data is yours: CurlerRoo is a desktop application that runs on your machine. Your data is stored locally and never leaves your machine. You can use your favorite tools that you trust for backup and version control.
+- Open-source and free to use. CurlerRoo is built by developers for developers.
+
+### Contribute
+If you like CurlerRoo, please star the repository. Also, consider referring CurlerRoo to your friends and colleagues. I work on CurlerRoo in my free time, for free and all I need is people like you to use it and spread the word.
+
 ### Features
 - Create, edit, save and send cURL commands.
 - Auto-complete cURL syntax.
 - Execute scripts before and after the cURL command.
-- Extract variables from the response and use them in subsequent requests.
-- Easily create and utilize variables with a few clicks.
+- Create variables and use them in your cURL command.
+- Automatically extract variables from the response.
 - Execute multiple chained requests.
-- Easily comment on requests using `#` and `//`.
 - Store requests as plain text files, enabling easy use of your favorite tools for backup and version control.
 
 ### Demo
