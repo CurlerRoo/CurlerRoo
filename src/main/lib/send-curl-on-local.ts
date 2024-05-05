@@ -103,6 +103,7 @@ export const sendCurl: SendCurlFunction = async ({
         `${cdToSelectedDirectory}${finalizedCurlRequest}`,
         true,
       ).catch((err) => {
+        debugLog('HVH', 'err', err);
         if (err.stderr.startsWith('curl:')) {
           throw new Error(err.stderr);
         }
