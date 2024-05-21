@@ -12,7 +12,7 @@ import {
   headers,
   methods,
   tes,
-} from './http-resources';
+} from '../../../shared/http-resources';
 import { BREAKLINE_ESCAPE_CHAR } from '@constants';
 import { debugLog } from '../../../shared/utils';
 

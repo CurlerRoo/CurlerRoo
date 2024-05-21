@@ -1,7 +1,10 @@
-import { curlKeys } from '../renderer/lib/components/http-resources';
+import { curlKeys } from './http-resources';
 import { Variable } from './types';
 import { CurlPart } from './get-curl-parts';
 import { findVariableFromCurlPartValue } from './utils';
+import ip from 'ip';
+import { PLATFORM } from '@constants';
+import _ from 'lodash';
 
 const globalVariables = [
   {
@@ -140,12 +143,33 @@ export const validateCurlSyntax = ({ parts }: { parts: CurlPart[] }) => {
       ) {
         if (!acc.curlUrlExisted) {
           if (['curl', 'value'].includes(acc.lastNonDelimiterPart?.type!)) {
+            const unsupportedLocalUrl =
+              _.attempt(() => {
+                const url = new URL(part.value);
+                const hostname = url?.hostname;
+                const isPrivateIp =
+                  _.attempt(() => ip.isPrivate(hostname || '')) === true;
+                return (
+                  PLATFORM === 'browser' &&
+                  (isPrivateIp || hostname === 'localhost')
+                );
+              }) === true;
             return {
               lastPart: part,
               lastNonDelimiterPart: part,
               curlExisted: acc.curlExisted,
               curlUrlExisted: true,
-              errorParts: acc.errorParts,
+              errorParts: acc.errorParts.concat(
+                !unsupportedLocalUrl
+                  ? []
+                  : [
+                      {
+                        ...part,
+                        errorMessage:
+                          'Local IP addresses could not be used due to restrictions from browser. Please download the desktop app to use Local IP addresses.',
+                      },
+                    ],
+              ),
             };
           }
         } else if (acc.lastNonDelimiterPart?.type === 'value') {

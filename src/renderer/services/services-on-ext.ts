@@ -14,7 +14,6 @@ export const ServicesOnExt: any = new Proxy(
             args,
             id,
           };
-          console.log('HVH', 'message', message);
           window.postMessage(message, '*');
         });
       };
