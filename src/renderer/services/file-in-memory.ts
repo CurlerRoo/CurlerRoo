@@ -214,6 +214,7 @@ export const getDirectoryInfo: GetDirectoryInfoFunction = async (
     path: dirPath,
     children: await Bluebird.map(info, async (m: any) => ({
       ...m,
+      path: `${m.path}/${m.name}`.replace('//', '/'),
       ...(!m.mode.toString(8).startsWith('4')
         ? undefined
         : await getDirectoryInfo(`${dirPath}/${m.name}`.replace('//', '/'))),

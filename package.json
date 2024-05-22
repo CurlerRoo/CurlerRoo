@@ -91,7 +91,7 @@
     "is-mobile": "^4.0.0",
     "isbinaryfile": "^5.0.2",
     "lodash": "^4.17.21",
-    "memfs": "^4.7.1",
+    "memfs": "^4.9.2",
     "mime-types": "^2.1.35",
     "parse5": "^7.1.2",
     "quickjs-emscripten": "^0.23.0",
