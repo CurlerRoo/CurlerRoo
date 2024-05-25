@@ -15,6 +15,7 @@ type RandomNumber = number;
 
 export type ActiveDocumentState = null | {
   id: string;
+  shared_id?: string;
   version: number;
   executingAllCells: boolean;
   cells: CurlCellType[];
@@ -38,6 +39,7 @@ export const saveActiveDocument = createAsyncThunk<
   }
   await Services.writeFile(state.filePath, {
     id: state.id,
+    shared_id: state.shared_id,
     cells: state.cells,
     version: state.version,
     globalVariables: state.globalVariables,
@@ -263,6 +265,7 @@ export const sendAllCurls = createAsyncThunk<
 
 const initialState = {
   id: v4(),
+  shared_id: undefined,
   version: 2,
   executingAllCells: false,
   cells: [
@@ -390,6 +393,7 @@ export const activeDocumentSlice = createSlice({
       }
       // add cell at index
       state.cells.splice(action.payload.cellIndex, 0, action.payload.cell);
+      state.activeCellIndex = action.payload.cellIndex;
     },
     removeCell: (state, action: PayloadAction<number>) => {
       if (!state) {

@@ -66,3 +66,6 @@ export const PRIVACY_POLICY_VERSION = '0.0.1';
 export const CURLERROO_FILE_EXTENSION = 'crr';
 export const ENABLE_TELEMETRY_FEATURE = false;
 export const IN_MEMORY_FILE_SYSTEM_DEFAULT_FILE_PATH = '/requests/new-file.crr';
+export const ENDPOINT0 = 'https://api.curlerroo.com';
+export const ENDPOINT1 = 'https://api-asia.curlerroo.com';
+export const WEB_APP_URL = 'https://app.curlerroo.com';

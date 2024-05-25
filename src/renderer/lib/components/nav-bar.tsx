@@ -1,6 +1,6 @@
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useCallback, useEffect } from 'react';
-import { VscAdd, VscRunAll } from 'react-icons/vsc';
+import { VscAdd, VscCopy, VscLink, VscRunAll } from 'react-icons/vsc';
 import Notification from 'rc-notification';
 import 'rc-notification/assets/index.css';
 import { v4 } from 'uuid';
@@ -9,14 +9,18 @@ import {
   addCell,
   sendAllCurls,
 } from '../../state/features/documents/active-document';
-import { AppDispatch } from '../../state/store';
+import { AppDispatch, RootState } from '../../state/store';
 import { TextButton } from './text-button';
 import { CurlCellType, Variable } from '../../../shared/types';
+import { modal } from './modal';
+import { getDocOnDiskFromDoc } from '../../../shared/get-doc-on-disk-from-doc';
+import { ENDPOINT0, WEB_APP_URL } from '../../../shared/constants/constants';
 
 const textButtonStyle = {};
 
 export function NavBar({
   id,
+  shared_id,
   activeCellIndex,
   cells,
   filePath,
@@ -25,6 +29,7 @@ export function NavBar({
   selectedDirectory,
 }: {
   id: string;
+  shared_id?: string;
   activeCellIndex: number;
   cells: CurlCellType[];
   filePath: string;
@@ -33,6 +38,9 @@ export function NavBar({
   selectedDirectory: string;
 }) {
   const dispatch: AppDispatch = useDispatch();
+  const activeDocument = useSelector(
+    (state: RootState) => state.activeDocument,
+  );
 
   const saveFile = useCallback(async () => {
     if (!filePath) {
@@ -40,6 +48,7 @@ export function NavBar({
     }
     await Services.writeFile(filePath, {
       id,
+      shared_id,
       version: 2,
       cells,
       globalVariables,
@@ -60,7 +69,7 @@ export function NavBar({
         });
       });
     });
-  }, [id, cells, filePath, globalVariables, executingAllCells]);
+  }, [id, shared_id, cells, filePath, globalVariables, executingAllCells]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -76,7 +85,7 @@ export function NavBar({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row' }}>
+    <div style={{ display: 'flex', flexDirection: 'row', gap: 15 }}>
       <TextButton
         icon={VscAdd}
         style={textButtonStyle}
@@ -126,7 +135,6 @@ export function NavBar({
       >
         Request
       </TextButton>
-      <span style={{ width: 15, display: 'inline-block' }} />
       <TextButton
         onClick={() => {
           dispatch(sendAllCurls({ selectedDirectory }));
@@ -136,6 +144,77 @@ export function NavBar({
         type="button"
       >
         Run All
+      </TextButton>
+      <TextButton
+        icon={VscLink}
+        onClick={async () => {
+          if (!activeDocument) {
+            return;
+          }
+          const { close: closeWaitModal } = modal({
+            content: <div>Uploading...</div>,
+          });
+
+          const docOnDisk = getDocOnDiskFromDoc({
+            ...activeDocument,
+            type: 'notebook',
+          });
+          const endpoint = `${ENDPOINT0}/share`;
+          const { id } = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(docOnDisk),
+          }).then((res) => res.json());
+
+          const url = `${WEB_APP_URL}?sharedKey=${id}`;
+          closeWaitModal();
+          const { close } = modal({
+            content: (
+              <div>
+                <p>URL:</p>
+                <div>
+                  <input
+                    style={{
+                      width: 'calc(100% - 22px)',
+                      padding: 10,
+                      fontSize: '16px',
+                      border: '1px solid #ccc',
+                      borderRadius: '5px',
+                    }}
+                    value={url}
+                    readOnly
+                  />
+                </div>
+                <p style={{ lineHeight: '1.5rem' }}>
+                  Note: For privacy reason, the shared document will be{' '}
+                  <b>deleted on cloud after 48 hours</b> from the last access.
+                  The local imported document will not be deleted.
+                </p>
+                <div style={{ height: 20 }} />
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <TextButton
+                    icon={VscCopy}
+                    onClick={() => {
+                      navigator.clipboard.writeText(url);
+                      close();
+                    }}
+                  >
+                    Copy
+                  </TextButton>
+                </div>
+              </div>
+            ),
+          });
+        }}
+      >
+        Create Share Link
       </TextButton>
     </div>
   );

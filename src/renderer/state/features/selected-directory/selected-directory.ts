@@ -53,9 +53,17 @@ export const selectDirectory = createAsyncThunk<
 
 export const createDirectory = createAsyncThunk<
   Promise<void>,
-  void,
+  {
+    path?: string;
+  },
   { state: { selectedDirectory: SelectedDirectoryState } }
->('selectedDirectory/createDirectory', async (_, thunkAPI) => {
+>('selectedDirectory/createDirectory', async ({ path }, thunkAPI) => {
+  if (path) {
+    await Services.createDirectory(path);
+    await thunkAPI.dispatch(loadDirectoryInfo());
+    return;
+  }
+
   const { selectedSubDirectoryOrFile, selectedSubType } =
     thunkAPI.getState().selectedDirectory;
 
@@ -135,6 +143,7 @@ export const createFileWithContent = createAsyncThunk<
     await thunkAPI.dispatch(loadDirectoryInfo());
     await Services.writeFile(createResult.filePath, {
       id: content.id,
+      shared_id: content.shared_id,
       cells: content.cells,
       version: content.version,
       globalVariables: content.globalVariables,

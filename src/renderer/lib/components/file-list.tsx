@@ -455,10 +455,15 @@ export function DirTree({
           contentEditable={isRenaming}
           ref={fileNameRef}
           style={{
+            overflow: 'hidden',
             outline: 'none',
             whiteSpace: 'nowrap',
           }}
+          onFocus={(e) => {
+            e.target.style.overflow = 'hidden';
+          }}
           onBlur={async (e) => {
+            e.target.style.overflow = 'clip';
             const trimmed = e.target.innerText?.trim();
             if (!trimmed) {
               e.target.innerText = dirTree.name;
@@ -625,6 +630,7 @@ export function FileList({
         return dispatch(
           setActiveDocument({
             id: document.id,
+            shared_id: document.shared_id,
             version: 2,
             filePath: selectedSubDirectoryOrFile,
             executingAllCells: document.executingAllCells,
@@ -710,7 +716,7 @@ export function FileList({
         <TextButton
           icon={VscNewFolder}
           onClick={() => {
-            dispatch(createDirectory());
+            dispatch(createDirectory({}));
           }}
         >
           Folder

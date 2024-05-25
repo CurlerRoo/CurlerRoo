@@ -68,60 +68,61 @@ export type CurlCellType = {
   post_scripts_status?: 'idle' | 'sending' | 'success' | 'error';
 };
 
+export const docCellSchema = z.object({
+  id: z.string(),
+  cell_type: z.enum(['curl']),
+  name: z.string().optional(),
+  cursor_position: z.object({
+    lineNumber: z.number(),
+    column: z.number(),
+    offset: z.number(),
+  }),
+  execution_count: z.union([z.number(), z.null()]),
+  metadata: z.object({
+    collapsed: z.boolean(),
+    jupyter: z.object({
+      source_hidden: z.boolean(),
+    }),
+  }),
+  outputs: z.array(
+    z.object({
+      protocol: z.string(),
+      headers: z.record(z.string()),
+      status: z.number(),
+      bodyFilePath: z.string(),
+      body: z.array(z.string()),
+      bodyBase64: z.string(),
+      formattedBody: z.string().default(''),
+      searchResult: z
+        .array(
+          z.object({
+            start: z.number(),
+            end: z.number(),
+            index: z.number(),
+          }),
+        )
+        .optional(),
+      searchResultSelectedIndex: z.number().optional(),
+      showSearch: z.boolean().default(false),
+      responseDate: z.number().default(0),
+    }),
+  ),
+  source: z.array(z.string()),
+  pre_scripts_enabled: z.boolean().default(false),
+  pre_scripts: z.array(z.string()),
+  post_scripts_enabled: z.boolean().default(false),
+  post_scripts: z.array(z.string()),
+  send_status: z.enum(['idle', 'sending', 'success', 'error']),
+  sending_id: z.string().optional(),
+});
+
 export const docSchema = z.object({
   id: z.string(),
+  shared_id: z.string().uuid().optional(),
   version: z.number().default(1),
   type: z.literal('notebook'),
   executingAllCells: z.boolean().default(false),
-  cells: z.array(
-    z.object({
-      id: z.string(),
-      cell_type: z.enum(['curl']),
-      name: z.string().optional(),
-      cursor_position: z.object({
-        lineNumber: z.number(),
-        column: z.number(),
-        offset: z.number(),
-      }),
-      execution_count: z.union([z.number(), z.null()]),
-      metadata: z.object({
-        collapsed: z.boolean(),
-        jupyter: z.object({
-          source_hidden: z.boolean(),
-        }),
-      }),
-      outputs: z.array(
-        z.object({
-          protocol: z.string(),
-          headers: z.record(z.string()),
-          status: z.number(),
-          bodyFilePath: z.string(),
-          body: z.array(z.string()),
-          bodyBase64: z.string(),
-          formattedBody: z.string().default(''),
-          searchResult: z
-            .array(
-              z.object({
-                start: z.number(),
-                end: z.number(),
-                index: z.number(),
-              }),
-            )
-            .optional(),
-          searchResultSelectedIndex: z.number().optional(),
-          showSearch: z.boolean().default(false),
-          responseDate: z.number().default(0),
-        }),
-      ),
-      source: z.array(z.string()),
-      pre_scripts_enabled: z.boolean().default(false),
-      pre_scripts: z.array(z.string()),
-      post_scripts_enabled: z.boolean().default(false),
-      post_scripts: z.array(z.string()),
-      send_status: z.enum(['idle', 'sending', 'success', 'error']),
-      sending_id: z.string().optional(),
-    }),
-  ),
+  cells: z.array(docCellSchema),
   globalVariables: z.array(
     z.object({
       key: z.string(),
@@ -133,42 +134,43 @@ export const docSchema = z.object({
 
 export type DocType = z.infer<typeof docSchema>;
 
-export const docOnDiskSchema = z.object({
+export const docOnDiskCellSchema = z.object({
   id: z.string().optional(),
-  version: z.number().default(1),
-  type: z.literal('notebook'),
-  cells: z.array(
+  name: z.string().optional(),
+  cell_type: z.enum(['curl']),
+  execution_count: z.union([z.number(), z.null()]),
+  metadata: z.object({
+    collapsed: z.boolean(),
+    jupyter: z.object({
+      source_hidden: z.boolean(),
+    }),
+  }),
+  outputs: z.array(
     z.object({
-      id: z.string().optional(),
-      name: z.string().optional(),
-      cell_type: z.enum(['curl']),
-      execution_count: z.union([z.number(), z.null()]),
-      metadata: z.object({
-        collapsed: z.boolean(),
-        jupyter: z.object({
-          source_hidden: z.boolean(),
-        }),
-      }),
-      outputs: z.array(
-        z.object({
-          protocol: z.string(),
-          headers: z.record(z.string()),
-          status: z.number(),
-          bodyFilePath: z.string().optional(),
-          bodyBase64: z.string().optional(),
-          body: z.array(z.string()),
-          responseDate: z.number(),
-        }),
-      ),
-      source: z.array(z.string()),
-      pre_scripts_enabled: z.boolean().default(false),
-      pre_scripts: z.array(z.string()).default(['']),
-      post_scripts_enabled: z.boolean().default(false),
-      post_scripts: z.array(z.string()),
-      send_status: z.enum(['idle', 'success', 'error']),
-      sending_id: z.string().optional(),
+      protocol: z.string(),
+      headers: z.record(z.string()),
+      status: z.number(),
+      bodyFilePath: z.string().optional(),
+      bodyBase64: z.string().optional(),
+      body: z.array(z.string()),
+      responseDate: z.number(),
     }),
   ),
+  source: z.array(z.string()),
+  pre_scripts_enabled: z.boolean().default(false),
+  pre_scripts: z.array(z.string()).default(['']),
+  post_scripts_enabled: z.boolean().default(false),
+  post_scripts: z.array(z.string()),
+  send_status: z.enum(['idle', 'success', 'error']),
+  sending_id: z.string().optional(),
+});
+
+export const docOnDiskSchema = z.object({
+  id: z.string().optional(),
+  shared_id: z.string().uuid().optional(),
+  version: z.number().default(1),
+  type: z.literal('notebook'),
+  cells: z.array(docOnDiskCellSchema),
   globalVariables: z.array(
     z.object({
       key: z.string(),

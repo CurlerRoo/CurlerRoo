@@ -31,6 +31,7 @@ import { debugLog } from '../../shared/utils';
 import { getDocFromDocOnDisk } from '../../shared/get-doc-from-doc-on-disk';
 import { ServicesOnExt, appReady, extInstalled } from './services-on-ext';
 import { simpleExampleDocument } from '../../shared/simple-example-document';
+import { getDocOnDiskFromDoc } from '../../shared/get-doc-on-disk-from-doc';
 
 const localStorageMaxSpaceInMB = 5;
 const sparedSpaceInMB = 0.2;
@@ -39,7 +40,7 @@ const getLocalStorageUsedSpaceInMB = () => {
   let totalSize = 0;
 
   // Iterate through all keys in localStorage
-  for (let i = 0; i < localStorage.length; i++) {
+  for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i)!;
     const value = localStorage.getItem(key)!;
 
@@ -124,7 +125,7 @@ const saveFileSystemToLocalStorage = async () => {
         const doc = JSON.parse(value) as DocOnDiskType;
         return JSON.stringify(stripeBodyBase64FromDoc(doc));
       } catch {
-        return;
+        return null;
       }
     })
     .value();
@@ -134,7 +135,7 @@ const saveFileSystemToLocalStorage = async () => {
       .map(([key, value]) => {
         try {
           if (!value) {
-            return;
+            return null;
           }
           const doc = JSON.parse(value) as DocOnDiskType;
           const lastResponseDate = _(doc.cells)
@@ -148,7 +149,7 @@ const saveFileSystemToLocalStorage = async () => {
             doc,
           };
         } catch {
-          return;
+          return null;
         }
       })
       .flatMap((m) => (m ? [m] : []))
@@ -330,19 +331,7 @@ export const writeFile: WriteFileFunction = async (
   try {
     const volume = await getVolume();
     const fs = volume.promises;
-    const parsedDocOnDisk = _.flow(
-      (doc) => docSchema.parse(doc),
-      (doc) => ({
-        ...doc,
-        cells: doc.cells.map((cell) => ({
-          ...cell,
-          send_status:
-            cell.send_status === 'sending' ? 'idle' : cell.send_status,
-          sending_id: undefined,
-        })),
-      }),
-      (doc) => docOnDiskSchema.parse(doc),
-    )(document);
+    const parsedDocOnDisk = getDocOnDiskFromDoc(document);
     const text = JSON.stringify(parsedDocOnDisk, null, 2);
     // check if file exists
     await fs.access(filePath);

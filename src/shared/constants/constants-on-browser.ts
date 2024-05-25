@@ -47,7 +47,5 @@ export const PATH_SEPARATOR = OS === 'win32' ? '\\' : '/';
 
 export const ENABLE_UPDATE_FEATURE = false;
 export const USE_IN_MEMORY_FILE_SYSTEM = true;
-export const ENDPOINT0 = 'https://api.curlerroo.com';
-export const ENDPOINT1 = 'https://api-asia.curlerroo.com';
 export const PLATFORM: 'browser' | 'electron' = 'browser';
 export const ENABLE_TERMS_OF_SERVICE_FEATURE = false;

@@ -1,16 +1,13 @@
 import { useDispatch } from 'react-redux';
 import {
-  VscAdd,
   VscChevronDown,
   VscChevronUp,
   VscPlay,
   VscTrash,
 } from 'react-icons/vsc';
 import 'rc-notification/assets/index.css';
-import { v4 } from 'uuid';
 import {
   removeCell,
-  addCell,
   setActiveCellIndex,
   moveCellUp,
   moveCellDown,
@@ -101,7 +98,9 @@ export function CellBar({
             dispatch(validateCellAndSendCurl({ cellIndex, selectedDirectory }));
           }}
           tooltip="Send cURL command"
-        />
+        >
+          Run
+        </TextButton>
         <TextButton
           icon={VscChevronUp}
           iconProps={{ size: 16 }}
@@ -117,55 +116,6 @@ export function CellBar({
             dispatch(moveCellDown(cellIndex));
           }}
           tooltip="Move cell down"
-        />
-        <TextButton
-          icon={VscAdd}
-          iconProps={{ size: 16 }}
-          style={textButtonStyle}
-          type="button"
-          onClick={() => {
-            dispatch(
-              addCell({
-                cell: {
-                  id: v4(),
-                  cell_type: 'curl',
-                  cursor_position: {
-                    lineNumber: 1,
-                    column: 1,
-                    offset: 0,
-                  },
-                  execution_count: 0,
-                  metadata: {
-                    collapsed: false,
-                    jupyter: {
-                      source_hidden: false,
-                    },
-                  },
-                  outputs: [
-                    {
-                      protocol: '',
-                      bodyFilePath: '',
-                      bodyBase64: '',
-                      body: [''],
-                      headers: {},
-                      status: 0,
-                      showSearch: false,
-                      responseDate: 0,
-                      formattedBody: '',
-                    },
-                  ],
-                  source: [''],
-                  pre_scripts_enabled: false,
-                  pre_scripts: [''],
-                  post_scripts_enabled: false,
-                  post_scripts: [''],
-                  send_status: 'idle',
-                },
-                cellIndex: cellIndex + 1,
-              }),
-            );
-          }}
-          tooltip="Add new cell"
         />
         <TextButton
           icon={VscTrash}

@@ -34,6 +34,7 @@ import { useAutoCheckForUpdates } from './lib/hooks/use-auto-check-for-updates';
 import { modal } from './lib/components/modal';
 import { TextButton } from './lib/components/text-button';
 import {
+  addCell,
   addVariable,
   clearVariables,
 } from './state/features/documents/active-document';
@@ -43,6 +44,9 @@ import { extInstalled } from './services/services-on-ext';
 import { simpleExampleDocument } from '../shared/simple-example-document';
 import { prompt } from './lib/components/input-prompt';
 import GitHubButton from 'react-github-btn';
+import { v4 } from 'uuid';
+import { useSharedLink } from './lib/hooks/use-shared-link';
+import { Resizable } from 're-resizable';
 
 function HomeCells() {
   const dispatch: AppDispatch = useDispatch();
@@ -50,6 +54,7 @@ function HomeCells() {
     (state: RootState) => state.activeDocument,
   );
   const id = activeDocument?.id;
+  const shared_id = activeDocument?.shared_id;
   const cells = activeDocument?.cells;
   const filePath = activeDocument?.filePath;
   const globalVariables = activeDocument?.globalVariables;
@@ -223,6 +228,7 @@ function HomeCells() {
         >
           <NavBar
             id={id}
+            shared_id={shared_id}
             activeCellIndex={activeCellIndex}
             cells={cells}
             filePath={filePath}
@@ -356,7 +362,63 @@ function HomeCells() {
                   key={cell.id}
                   selectedDirectory={selectedDirectory}
                 />,
-                <div key={i + 0.5} style={{ height: 15 }} />,
+                <div
+                  key={i + 0.5}
+                  style={{
+                    margin: 5,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <TextButton
+                    icon={VscAdd}
+                    onClick={() => {
+                      dispatch(
+                        addCell({
+                          cell: {
+                            id: v4(),
+                            cell_type: 'curl',
+                            cursor_position: {
+                              lineNumber: 1,
+                              column: 1,
+                              offset: 0,
+                            },
+                            execution_count: 0,
+                            metadata: {
+                              collapsed: false,
+                              jupyter: {
+                                source_hidden: false,
+                              },
+                            },
+                            outputs: [
+                              {
+                                protocol: '',
+                                bodyFilePath: '',
+                                bodyBase64: '',
+                                body: [''],
+                                headers: {},
+                                status: 0,
+                                showSearch: false,
+                                responseDate: 0,
+                                formattedBody: '',
+                              },
+                            ],
+                            source: [''],
+                            pre_scripts_enabled: false,
+                            pre_scripts: [''],
+                            post_scripts_enabled: false,
+                            post_scripts: [''],
+                            send_status: 'idle',
+                          },
+                          cellIndex: i + 1,
+                        }),
+                      );
+                    }}
+                  >
+                    Add cell
+                  </TextButton>
+                </div>,
               ];
             })
             .concat(<div key={cells.length} style={{ height: '50vh' }} />)}
@@ -387,6 +449,8 @@ function HomeCellResponse() {
 }
 
 function Home() {
+  useSharedLink();
+
   const activeDocument = useSelector(
     (state: RootState) => state.activeDocument,
   );
@@ -431,19 +495,33 @@ function Home() {
           height: containerHeight,
         }}
       >
-        <div
-          style={{
+        <Resizable
+          defaultSize={{
+            width: 220,
             height: '100%',
+          }}
+          minWidth={220}
+          maxWidth="50vw"
+          enable={{
+            top: false,
+            right: true,
+            bottom: false,
+            left: false,
+            topRight: false,
+            bottomRight: false,
+            bottomLeft: false,
+            topLeft: false,
+          }}
+          style={{
             display: 'flex',
             flexDirection: 'column',
-            width: 220,
             backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
           }}
         >
           <div
             style={{
               flex: 1,
-              overflow: 'auto',
+              overflowX: 'hidden',
               padding: '10px 0',
             }}
           >
@@ -453,7 +531,7 @@ function Home() {
             {PLATFORM === 'browser' ? (
               <GitHubButton
                 href="https://github.com/CurlerRoo/CurlerRoo"
-                data-color-scheme="no-preference: light; light: light; dark: dark;"
+                data-color-scheme="no-preference: light; light: light; dark: light;"
                 data-icon="octicon-star"
                 data-size="large"
                 data-show-count="true"
@@ -562,7 +640,7 @@ function Home() {
               Settings
             </div>
           </div>
-        </div>
+        </Resizable>
         <div
           style={{
             width: 'calc(50vw - 110px)',

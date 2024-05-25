@@ -20,6 +20,7 @@ import {
   WriteFileFromBase64Function,
 } from '../../shared/file-interface';
 import { getDocFromDocOnDisk } from '../../shared/get-doc-from-doc-on-disk';
+import { getDocOnDiskFromDoc } from '../../shared/get-doc-on-disk-from-doc';
 
 export const getDirectoryInfo: GetDirectoryInfoFunction = async (
   dirPath: string,
@@ -122,19 +123,7 @@ export const writeFile: WriteFileFunction = async (
   document: DocType,
 ) => {
   try {
-    const parsedDocOnDisk = _.flow(
-      (doc) => docSchema.parse(doc),
-      (doc) => ({
-        ...doc,
-        cells: doc.cells.map((cell) => ({
-          ...cell,
-          send_status:
-            cell.send_status === 'sending' ? 'idle' : cell.send_status,
-          sending_id: undefined,
-        })),
-      }),
-      (doc) => docOnDiskSchema.parse(doc),
-    )(document);
+    const parsedDocOnDisk = getDocOnDiskFromDoc(document);
     const text = JSON.stringify(parsedDocOnDisk, null, 2);
     // check if file exists
     await fs.access(filePath);

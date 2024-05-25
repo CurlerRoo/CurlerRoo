@@ -5,11 +5,8 @@ import { getCurlParts } from '../../shared/get-curl-parts';
 import { parseCurlResponse } from '../../shared/parse-curl-response';
 import { findVariableFromCurlPartValue } from '../../shared/utils';
 import { SendCurlFunction } from '../../shared/send-curl-interface';
-import {
-  ENDPOINT0,
-  ENDPOINT1,
-} from '../../shared/constants/constants-on-browser';
 import Bluebird from 'bluebird';
+import { ENDPOINT0, ENDPOINT1 } from '../../shared/constants/constants';
 
 let endpoint = ENDPOINT0;
 let endpointUpdateCalled = false;
