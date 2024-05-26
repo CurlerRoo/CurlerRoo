@@ -1,6 +1,12 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useCallback, useEffect } from 'react';
-import { VscAdd, VscCopy, VscLink, VscRunAll } from 'react-icons/vsc';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  VscAdd,
+  VscCloudDownload,
+  VscCloudUpload,
+  VscCopy,
+  VscRunAll,
+} from 'react-icons/vsc';
 import Notification from 'rc-notification';
 import 'rc-notification/assets/index.css';
 import { v4 } from 'uuid';
@@ -15,8 +21,71 @@ import { CurlCellType, Variable } from '../../../shared/types';
 import { modal } from './modal';
 import { getDocOnDiskFromDoc } from '../../../shared/get-doc-on-disk-from-doc';
 import { ENDPOINT0, WEB_APP_URL } from '../../../shared/constants/constants';
+import { PLATFORM } from '@constants';
+import { SetURLSearchParams, useSearchParams } from 'react-router-dom';
 
 const textButtonStyle = {};
+
+const OpenShareLinkModalBody = ({
+  setSearchParams,
+  onClose,
+}: {
+  setSearchParams: SetURLSearchParams;
+  onClose: () => void;
+}) => {
+  const [url, setUrl] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!url) {
+      setErrorMessage('');
+      return;
+    }
+
+    const isValid = new RegExp(
+      `^${WEB_APP_URL}?sharedKey=[a-zA-Z0-9-]+$`
+        .replaceAll('?', '\\?')
+        .replaceAll('/', '\\/')
+        .replaceAll('.', '\\.')
+        .replaceAll('&', '\\&')
+        .replaceAll('=', '\\='),
+    ).test(url);
+
+    if (!isValid) {
+      setErrorMessage('Invalid URL');
+      return;
+    }
+    setErrorMessage('');
+    setSearchParams({ sharedKey: url.split('=')[1] }); // TODO: use qs
+    onClose();
+  }, [url, onClose, setSearchParams]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [url]);
+
+  return (
+    <div>
+      <p>URL:</p>
+      <div>
+        <input
+          ref={inputRef}
+          style={{
+            width: 'calc(100% - 22px)',
+            padding: 10,
+            fontSize: '16px',
+            border: '1px solid #ccc',
+            borderRadius: '5px',
+          }}
+          placeholder="Paste the shared link here"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
+      </div>
+      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+    </div>
+  );
+};
 
 export function NavBar({
   id,
@@ -37,6 +106,7 @@ export function NavBar({
   executingAllCells: boolean;
   selectedDirectory: string;
 }) {
+  const [_searchParams, setSearchParams] = useSearchParams();
   const dispatch: AppDispatch = useDispatch();
   const activeDocument = useSelector(
     (state: RootState) => state.activeDocument,
@@ -146,7 +216,7 @@ export function NavBar({
         Run All
       </TextButton>
       <TextButton
-        icon={VscLink}
+        icon={VscCloudUpload}
         onClick={async () => {
           if (!activeDocument) {
             return;
@@ -216,6 +286,23 @@ export function NavBar({
       >
         Create Share Link
       </TextButton>
+      {PLATFORM !== 'browser' && (
+        <TextButton
+          icon={VscCloudDownload}
+          onClick={() => {
+            const { close } = modal({
+              content: (
+                <OpenShareLinkModalBody
+                  setSearchParams={setSearchParams}
+                  onClose={() => close()}
+                />
+              ),
+            });
+          }}
+        >
+          Open Share Link
+        </TextButton>
+      )}
     </div>
   );
 }

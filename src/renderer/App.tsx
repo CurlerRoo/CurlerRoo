@@ -1,4 +1,4 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {
   VscAdd,
   VscDesktopDownload,
@@ -667,7 +667,7 @@ export default function App() {
     <AppConsent>
       <Router>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="*" element={<Home />} />
         </Routes>
       </Router>
     </AppConsent>
