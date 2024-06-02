@@ -10,7 +10,7 @@ import {
   VscStarFull,
   VscTrash,
 } from 'react-icons/vsc';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Services } from '@services';
 import './App.css';
 import { useDispatch, useSelector } from 'react-redux';
@@ -486,6 +486,21 @@ function Home() {
     }
   }, [isMobileDevice]);
 
+  const [fileListSize, setFileListSize] = useState(220);
+
+  useEffect(() => {
+    const fn = () => {
+      const width = window.innerWidth;
+      if (fileListSize > width / 2) {
+        setFileListSize(width / 2);
+      }
+    };
+    window.addEventListener('resize', fn);
+    return () => {
+      window.removeEventListener('resize', fn);
+    };
+  }, [fileListSize]);
+
   return (
     <div>
       <div
@@ -493,14 +508,15 @@ function Home() {
           display: 'flex',
           flexDirection: 'row',
           height: containerHeight,
+          overflow: 'hidden',
         }}
       >
         <Resizable
-          defaultSize={{
-            width: 220,
+          size={{
+            width: fileListSize,
             height: '100%',
           }}
-          minWidth={220}
+          minWidth={100}
           maxWidth="50vw"
           enable={{
             top: false,
@@ -516,12 +532,24 @@ function Home() {
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+            paddingRight: 5,
+          }}
+          handleStyles={{
+            right: {
+              right: 0,
+              width: 5,
+              backgroundColor: `#${COLORS[THEME].GREY2}`,
+            },
+          }}
+          onResizeStop={(e, direction, ref, d) => {
+            const width = parseInt(ref.style.width);
+            setFileListSize(width);
           }}
         >
           <div
             style={{
               flex: 1,
-              overflowX: 'hidden',
+              overflow: 'hidden',
               padding: '10px 0',
             }}
           >
@@ -643,17 +671,25 @@ function Home() {
         </Resizable>
         <div
           style={{
-            width: 'calc(50vw - 110px)',
+            flex: 1,
+            display: 'flex',
+            position: 'relative',
           }}
         >
-          <HomeCells />
-        </div>
-        <div
-          style={{
-            width: 'calc(50vw - 110px)',
-          }}
-        >
-          <HomeCellResponse />
+          <div
+            style={{
+              width: `calc(50vw - ${fileListSize / 2}px)`,
+            }}
+          >
+            <HomeCells />
+          </div>
+          <div
+            style={{
+              width: `calc(50vw - ${fileListSize / 2}px)`,
+            }}
+          >
+            <HomeCellResponse />
+          </div>
         </div>
       </div>
     </div>

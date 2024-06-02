@@ -44,6 +44,7 @@ export function TextButton({
           width: 'fit-content',
           height: 'fit-content',
           cursor: 'pointer',
+          whiteSpace: 'nowrap',
           ...props.style,
         }}
       >

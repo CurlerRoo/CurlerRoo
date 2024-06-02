@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import electron, { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { ProgressInfo, autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import {
@@ -84,8 +84,9 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    minWidth: 960,
+    minHeight: 728,
+    resizable: true,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -96,6 +97,7 @@ const createWindow = async () => {
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
+  const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize;
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
@@ -103,6 +105,7 @@ const createWindow = async () => {
     if (process.env.START_MINIMIZED) {
       mainWindow.minimize();
     } else {
+      mainWindow.setSize(width, height);
       mainWindow.show();
     }
   });
@@ -176,7 +179,6 @@ app
           selectedDirectory: string;
         },
       ) => {
-        console.log('HVH33', 'selectedDirectory', selectedDirectory);
         return sendCurl({ curlRequest, variables, selectedDirectory });
       },
     );

@@ -654,12 +654,20 @@ export function FileList({
   }, [dispatch, selectedSubType, selectedSubDirectoryOrFile]);
 
   return (
-    <div style={{ paddingLeft: 5 }}>
+    <div
+      style={{
+        paddingLeft: 5,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <div
         style={{
           display: 'flex',
           justifyContent: 'center',
-          margin: '0 5px',
+          flexWrap: 'wrap',
+          rowGap: 15,
         }}
       >
         {!USE_IN_MEMORY_FILE_SYSTEM && (
@@ -736,6 +744,7 @@ export function FileList({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 15,
+          padding: '0 5px',
         }}
       >
         <span
@@ -770,13 +779,20 @@ export function FileList({
         />
       </div>
       <div style={{ height: 5 }} />
-      <DirTree
-        activeDocument={activeDocument}
-        dirTree={selectedDirectoryInfo}
-        level={0}
-        defaultIsOpen
-        hideRoot
-      />
+      <div
+        style={{
+          overflowY: 'scroll',
+          flex: 1,
+        }}
+      >
+        <DirTree
+          activeDocument={activeDocument}
+          dirTree={selectedDirectoryInfo}
+          level={0}
+          defaultIsOpen
+          hideRoot
+        />
+      </div>
     </div>
   );
 }

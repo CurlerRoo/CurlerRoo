@@ -154,8 +154,106 @@ export function NavBar({
     return null;
   }
 
+  const createShareLink = async () => {
+    if (!activeDocument) {
+      return;
+    }
+    const { close: closeWaitModal } = modal({
+      content: <div>Uploading...</div>,
+    });
+
+    const docOnDisk = getDocOnDiskFromDoc({
+      ...activeDocument,
+      type: 'notebook',
+    });
+    const endpoint = `${ENDPOINT0}/share`;
+    const { id } = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(docOnDisk),
+    }).then((res) => res.json());
+
+    const url = `${WEB_APP_URL}?sharedKey=${id}`;
+    closeWaitModal();
+    const { close } = modal({
+      content: (
+        <div>
+          <p>URL:</p>
+          <div>
+            <input
+              style={{
+                width: 'calc(100% - 22px)',
+                padding: 10,
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: '5px',
+              }}
+              value={url}
+              readOnly
+            />
+          </div>
+          <p style={{ lineHeight: '1.5rem' }}>
+            Note: For privacy reason, the shared document will be{' '}
+            <b>deleted on cloud after 48 hours</b> from the last access. The
+            local imported document will not be deleted.
+          </p>
+          <div style={{ height: 20 }} />
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <TextButton
+              icon={VscCopy}
+              onClick={() => {
+                navigator.clipboard.writeText(url);
+                close();
+              }}
+            >
+              Copy
+            </TextButton>
+          </div>
+        </div>
+      ),
+    });
+  };
+
+  const confirmCreateShareLink = async () => {
+    const { close } = modal({
+      content: (
+        <div>
+          <p style={{ textAlign: 'center' }}>
+            You are about to upload the document to the cloud and create a share
+            link. Are you sure?
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <TextButton
+              onClick={() => {
+                createShareLink();
+                close();
+              }}
+            >
+              Yes
+            </TextButton>
+            <TextButton onClick={() => close()}>No</TextButton>
+          </div>
+        </div>
+      ),
+    });
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', gap: 15 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        gap: 15,
+        flexWrap: 'wrap',
+      }}
+    >
       <TextButton
         icon={VscAdd}
         style={textButtonStyle}
@@ -215,75 +313,7 @@ export function NavBar({
       >
         Run All
       </TextButton>
-      <TextButton
-        icon={VscCloudUpload}
-        onClick={async () => {
-          if (!activeDocument) {
-            return;
-          }
-          const { close: closeWaitModal } = modal({
-            content: <div>Uploading...</div>,
-          });
-
-          const docOnDisk = getDocOnDiskFromDoc({
-            ...activeDocument,
-            type: 'notebook',
-          });
-          const endpoint = `${ENDPOINT0}/share`;
-          const { id } = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(docOnDisk),
-          }).then((res) => res.json());
-
-          const url = `${WEB_APP_URL}?sharedKey=${id}`;
-          closeWaitModal();
-          const { close } = modal({
-            content: (
-              <div>
-                <p>URL:</p>
-                <div>
-                  <input
-                    style={{
-                      width: 'calc(100% - 22px)',
-                      padding: 10,
-                      fontSize: '16px',
-                      border: '1px solid #ccc',
-                      borderRadius: '5px',
-                    }}
-                    value={url}
-                    readOnly
-                  />
-                </div>
-                <p style={{ lineHeight: '1.5rem' }}>
-                  Note: For privacy reason, the shared document will be{' '}
-                  <b>deleted on cloud after 48 hours</b> from the last access.
-                  The local imported document will not be deleted.
-                </p>
-                <div style={{ height: 20 }} />
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <TextButton
-                    icon={VscCopy}
-                    onClick={() => {
-                      navigator.clipboard.writeText(url);
-                      close();
-                    }}
-                  >
-                    Copy
-                  </TextButton>
-                </div>
-              </div>
-            ),
-          });
-        }}
-      >
+      <TextButton icon={VscCloudUpload} onClick={confirmCreateShareLink}>
         Create Share Link
       </TextButton>
       {PLATFORM !== 'browser' && (

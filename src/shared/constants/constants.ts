@@ -60,7 +60,7 @@ export const COLORS: {
   },
 };
 
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.2.1';
 export const TERMS_OF_SERVICE_VERSION = '0.0.1';
 export const PRIVACY_POLICY_VERSION = '0.0.1';
 export const CURLERROO_FILE_EXTENSION = 'crr';
