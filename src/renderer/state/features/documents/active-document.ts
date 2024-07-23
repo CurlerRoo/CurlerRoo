@@ -292,7 +292,6 @@ const initialState = {
           body: [''],
           headers: {},
           status: 0,
-          showSearch: false,
           responseDate: 0,
           formattedBody: '',
         },
@@ -457,7 +456,6 @@ export const activeDocumentSlice = createSlice({
           body: [''],
           headers: {},
           status: 0,
-          showSearch: false,
           responseDate: 0,
           formattedBody: '',
         },
@@ -511,97 +509,22 @@ export const activeDocumentSlice = createSlice({
       const cell = state.cells[action.payload.cellIndex];
       cell.source = [...cell.source, `@${action.payload.filePath}`];
     },
-    setOutputsSearchResult: (
+    setSearchClickedAt: (
       state,
       action: PayloadAction<{
         cellIndex: number;
-        outputsSearchResult: {
-          start: number;
-          end: number;
-          index: number;
-        }[];
+        searchClickedAt: number;
       }>,
     ) => {
       if (!state) {
         throw new Error('No active document');
       }
-      const lastOutput = _.last(state.cells[action.payload.cellIndex].outputs);
+      const cell = state.cells[action.payload.cellIndex];
+      const lastOutput = _.last(cell.outputs);
       if (!lastOutput) {
         return;
       }
-      lastOutput.searchResult = action.payload.outputsSearchResult;
-      if (
-        lastOutput.searchResultSelectedIndex &&
-        lastOutput.searchResultSelectedIndex >= lastOutput.searchResult.length
-      ) {
-        lastOutput.searchResultSelectedIndex = undefined;
-      }
-    },
-    selectNextOutputsSearchResult: (
-      state,
-      action: PayloadAction<{ cellIndex: number }>,
-    ) => {
-      if (!state) {
-        throw new Error('No active document');
-      }
-      const cell = state.cells[action.payload.cellIndex];
-      if (!_.last(cell.outputs)?.searchResult?.length) {
-        return;
-      }
-      if (_.last(cell.outputs)?.searchResultSelectedIndex == null) {
-        _.last(cell.outputs)!.searchResultSelectedIndex = 0;
-        return;
-      }
-      const newSelectedIndex = _.flow(
-        (index: number) => index + 1,
-        (index) => index % _.last(cell.outputs)!.searchResult!.length,
-      )(_.last(cell.outputs)!.searchResultSelectedIndex!);
-      _.last(cell.outputs)!.searchResultSelectedIndex = newSelectedIndex;
-    },
-    selectPreviousOutputsSearchResult: (
-      state,
-      action: PayloadAction<{ cellIndex: number }>,
-    ) => {
-      if (!state) {
-        throw new Error('No active document');
-      }
-      const cell = state.cells[action.payload.cellIndex];
-      if (!_.last(cell.outputs)?.searchResult?.length) {
-        return;
-      }
-      if (_.last(cell.outputs)?.searchResultSelectedIndex == null) {
-        _.last(cell.outputs)!.searchResultSelectedIndex =
-          _.last(cell.outputs)!.searchResult!.length - 1;
-        return;
-      }
-      const newSelectedIndex = _.flow(
-        (index: number) => index - 1,
-        (index) =>
-          index < 0 ? _.last(cell.outputs)!.searchResult!.length - 1 : index,
-      )(_.last(cell.outputs)!.searchResultSelectedIndex!);
-      _.last(cell.outputs)!.searchResultSelectedIndex = newSelectedIndex;
-    },
-    setShowSearch: (
-      state,
-      action: PayloadAction<{
-        cellIndex: number;
-        showSearch: boolean;
-      }>,
-    ) => {
-      if (!state) {
-        throw new Error('No active document');
-      }
-      const cell = state.cells[action.payload.cellIndex];
-      _.last(cell.outputs)!.showSearch = action.payload.showSearch;
-    },
-    clearSearch: (state, action: PayloadAction<{ cellIndex: number }>) => {
-      if (!state) {
-        throw new Error('No active document');
-      }
-      const cell = state.cells[action.payload.cellIndex];
-      _.last(cell.outputs)!.searchResult = undefined;
-      _.last(cell.outputs)!.searchResultSelectedIndex = undefined;
-      _.last(cell.outputs)!.showSearch = false;
+      lastOutput.searchClickedAt = action.payload.searchClickedAt;
     },
     reset: () => initialState,
     setCursorPosition: (
@@ -665,7 +588,6 @@ export const activeDocumentSlice = createSlice({
           formattedBody: '',
           headers: {},
           status: 0,
-          showSearch: false,
           responseDate: 0,
         },
       ];
@@ -697,7 +619,6 @@ export const activeDocumentSlice = createSlice({
           formattedBody: '',
           headers: response.headers,
           status: response.status,
-          showSearch: false,
           responseDate: Date.now(),
         }));
       })();
@@ -801,8 +722,7 @@ export const {
   deleteVariable,
   clearVariables,
   addFile,
-  setShowSearch,
-  clearSearch,
+  setSearchClickedAt,
   reset,
   setCursorPosition,
   forceRefocusActiveCell,

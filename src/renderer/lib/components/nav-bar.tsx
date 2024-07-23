@@ -6,6 +6,7 @@ import {
   VscCloudUpload,
   VscCopy,
   VscRunAll,
+  VscSearch,
 } from 'react-icons/vsc';
 import Notification from 'rc-notification';
 import 'rc-notification/assets/index.css';
@@ -14,15 +15,166 @@ import { Services } from '@services';
 import {
   addCell,
   sendAllCurls,
+  setActiveCellIndex,
 } from '../../state/features/documents/active-document';
 import { AppDispatch, RootState } from '../../state/store';
 import { TextButton } from './text-button';
 import { CurlCellType, Variable } from '../../../shared/types';
 import { modal } from './modal';
 import { getDocOnDiskFromDoc } from '../../../shared/get-doc-on-disk-from-doc';
-import { ENDPOINT0, WEB_APP_URL } from '../../../shared/constants/constants';
+import {
+  COLORS,
+  ENDPOINT0,
+  THEME,
+  WEB_APP_URL,
+} from '../../../shared/constants/constants';
 import { PLATFORM } from '@constants';
 import { SetURLSearchParams, useSearchParams } from 'react-router-dom';
+import styled from 'styled-components';
+import { setSelectedSubDirectoryOrFile } from '../../state/features/selected-directory/selected-directory';
+import { useDebounce } from 'react-use';
+import { searchAll } from '../../services/search-all';
+
+const HoverHighlight = styled.div`
+  &:hover {
+    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
+  }
+`;
+
+function SearchAll({ close }: { close: () => void }) {
+  const [search, setSearch] = useState('');
+  const [results, setResults] = useState<
+    {
+      filePath: string;
+      cellIndex: number;
+      previewText: [string, string, string];
+    }[]
+  >([]);
+
+  const selectedDirectoryInfo = useSelector(
+    (state: RootState) => state.selectedDirectory.selectedDirectoryInfo,
+  );
+
+  useDebounce(
+    () => {
+      (async () => {
+        if (!selectedDirectoryInfo || !search) {
+          return;
+        }
+
+        const results = await searchAll({
+          text: search,
+          selectedDirectoryInfo,
+        });
+        setResults(results);
+      })();
+    },
+    500,
+    [search, selectedDirectoryInfo],
+  );
+
+  const [targetCellIndex, setTargetCellIndex] = useState(-1);
+
+  const selectedSubDirectoryOrFile = useSelector(
+    (state: RootState) => state.selectedDirectory.selectedSubDirectoryOrFile,
+  );
+  const activeFilePath = useSelector(
+    (state: RootState) => state.activeDocument?.filePath,
+  );
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (
+      activeFilePath === selectedSubDirectoryOrFile &&
+      targetCellIndex !== -1
+    ) {
+      setTargetCellIndex(-1);
+      dispatch(setActiveCellIndex(targetCellIndex));
+    }
+  }, [dispatch, selectedSubDirectoryOrFile, activeFilePath, targetCellIndex]);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        style={{
+          height: 30,
+          width: '100%',
+          borderRadius: 5,
+          border: `1px solid #${COLORS[THEME].GREY1}`,
+          outline: 'none',
+          textIndent: 10,
+        }}
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search"
+      />
+      <div style={{ height: 20 }} />
+      <div
+        style={{
+          maxHeight: 300,
+          overflowY: 'scroll',
+        }}
+      >
+        {results.length === 0 && (
+          <div
+            style={{
+              padding: 10,
+              textAlign: 'center',
+              color: `#${COLORS[THEME].GREY}`,
+            }}
+          >
+            No results
+          </div>
+        )}
+        {results.map((m) => (
+          <div
+            style={{
+              cursor: 'pointer',
+            }}
+            onClick={() => {
+              setTargetCellIndex(m.cellIndex);
+              dispatch(
+                setSelectedSubDirectoryOrFile({
+                  path: m.filePath,
+                  type: 'file',
+                }),
+              );
+              close();
+            }}
+          >
+            <div
+              style={{
+                padding: 5,
+                color: `#${COLORS[THEME].BLUE}`,
+              }}
+            >
+              {m.filePath}
+            </div>
+            <HoverHighlight style={{ padding: 5, marginLeft: 20 }}>
+              ...{m.previewText[0]}
+              <span
+                style={{
+                  backgroundColor: `#${COLORS[THEME].YELLOW}`,
+                }}
+              >
+                {m.previewText[1]}
+              </span>
+              {m.previewText[2]}...
+            </HoverHighlight>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const textButtonStyle = {};
 
@@ -284,7 +436,6 @@ export function NavBar({
                     body: [''],
                     headers: {},
                     status: 0,
-                    showSearch: false,
                     responseDate: 0,
                     formattedBody: '',
                   },
@@ -333,6 +484,18 @@ export function NavBar({
           Open Share Link
         </TextButton>
       )}
+      <TextButton
+        onClick={() => {
+          const { close } = modal({
+            content: <SearchAll close={() => close()} />,
+          });
+        }}
+        icon={VscSearch}
+        style={textButtonStyle}
+        type="button"
+      >
+        Search All
+      </TextButton>
     </div>
   );
 }

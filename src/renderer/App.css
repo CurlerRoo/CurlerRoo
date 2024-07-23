@@ -40,3 +40,11 @@ code {
 .rc-dialog-wrap {
   display: flex;
 }
+
+.cm-panels.cm-panels-top {
+  font-size: 16px;
+}
+
+.cm-editor * {
+  font-family: 'RobotoMono', monospace
+}

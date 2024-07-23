@@ -5,6 +5,7 @@ import {
   CreateDirectoryFunction,
   CreateFileFunction,
   DeleteDirectoryOrFileFunction,
+  DirectoryTree,
   DuplicateDirectoryOrFileFunction,
   FixSelectedSubDirectoryOrFileFunction,
   GetDirectoryInfoFunction,

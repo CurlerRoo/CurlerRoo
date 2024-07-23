@@ -21,7 +21,6 @@ export const getDocFromDocOnDisk = (docOnDisk: DocOnDiskType): DocType => {
           outputs: cell.outputs.map((output) => ({
             ...output,
             formattedBody: '',
-            showSearch: false,
             bodyFilePath: output.bodyFilePath || '',
             bodyBase64: output.bodyBase64 || '',
           })),

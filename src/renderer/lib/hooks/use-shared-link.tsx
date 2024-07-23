@@ -72,7 +72,6 @@ export const useSharedLink = () => {
                       ...output,
                       bodyFilePath: '',
                       bodyBase64: '',
-                      showSearch: false,
                       formattedBody: '',
                     })),
                     id: cell.id || v4(),

@@ -43,13 +43,7 @@ export type CurlCellType = {
     bodyBase64: string;
     body: string[];
     formattedBody: string; // this is useful for copying to clipboard
-    searchResult?: {
-      start: number;
-      end: number;
-      index: number;
-    }[];
-    searchResultSelectedIndex?: number;
-    showSearch: boolean;
+    searchClickedAt?: number;
     responseDate: number;
   }[];
 
@@ -93,17 +87,7 @@ export const docCellSchema = z.object({
       body: z.array(z.string()),
       bodyBase64: z.string(),
       formattedBody: z.string().default(''),
-      searchResult: z
-        .array(
-          z.object({
-            start: z.number(),
-            end: z.number(),
-            index: z.number(),
-          }),
-        )
-        .optional(),
-      searchResultSelectedIndex: z.number().optional(),
-      showSearch: z.boolean().default(false),
+      searchClickedAt: z.number().optional(),
       responseDate: z.number().default(0),
     }),
   ),

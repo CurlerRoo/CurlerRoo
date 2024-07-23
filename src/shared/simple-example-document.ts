@@ -25,7 +25,6 @@ export const simpleExampleDocument: DocType = {
         {
           protocol: 'HTTP/2 200 ',
           formattedBody: '',
-          showSearch: false,
           headers: {
             date: 'Mon, 04 Mar 2024 13:10:38 GMT',
             'content-type': 'application/json; charset=utf-8',
@@ -69,7 +68,6 @@ export const simpleExampleDocument: DocType = {
         {
           protocol: '',
           formattedBody: '',
-          showSearch: false,
           headers: {},
           status: 0,
           bodyFilePath: '',

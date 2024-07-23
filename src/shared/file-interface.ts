@@ -1,6 +1,6 @@
 import { DocType } from './types';
 
-type DirectoryTree = {
+export type DirectoryTree = {
   path: string;
   name: string;
   children?: DirectoryTree[];

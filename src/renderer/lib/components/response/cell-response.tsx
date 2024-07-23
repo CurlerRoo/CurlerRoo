@@ -7,7 +7,7 @@ import { TextButton } from '../text-button';
 import {
   cancelSend,
   clearOutputs,
-  clearSearch,
+  setSearchClickedAt,
 } from '../../../state/features/documents/active-document';
 import { CurlCellType } from '../../../../shared/types';
 import { JsonTreeResponse } from './json-tree-response';
@@ -17,8 +17,6 @@ import { HtmlResponse } from './html-response';
 import { COLORS, THEME } from '@constants';
 import { ImageResponse } from './image-response';
 import { PlainTextResponse } from './plain-text-response';
-import { useSearchBar } from '../../hooks/use-search-bar';
-import { HotkeyOnFocus } from '../hotkey-on-focus';
 import { XmlResponse } from './xml-response';
 import { PdfResponse } from './pdf-response';
 
@@ -170,15 +168,6 @@ export function CellResponses({
     useResponseHandler({
       contentType: getHeader(output.headers, 'content-type') || '',
     });
-
-  useEffect(() => {
-    dispatch(clearSearch({ cellIndex: activeCellIndex }));
-  }, [selectedHandlerType, dispatch, activeCellIndex]);
-
-  const { showSearch, setShowSearch } = useSearchBar({
-    activeCellIndex,
-    bodyText: output.formattedBody || '',
-  });
 
   const [loadingEclipsis, setLoadingEclipsis] = useState(0);
 
@@ -381,18 +370,7 @@ export function CellResponses({
                     height: 20,
                   }}
                 >
-                  <HotkeyOnFocus
-                    onCtrlF={({ ref }) => {
-                      if (!enabledFeatures.includes('Search')) {
-                        return;
-                      }
-                      setShowSearch(!showSearch);
-                      if (showSearch) {
-                        // if showSearch is true, then we are hiding the search bar
-                        ref.current?.focus();
-                      }
-                    }}
-                  >
+                  <div>
                     View as:{' '}
                     {handlerTypes
                       .map((m) =>
@@ -425,7 +403,7 @@ export function CellResponses({
                       )
                       .flatMap((x) => [x, ' | '])
                       .slice(0, -1)}
-                  </HotkeyOnFocus>
+                  </div>
                   {enabledFeatures.includes('Copy all') && (
                     <TextButton
                       icon={VscCopy}
@@ -442,7 +420,12 @@ export function CellResponses({
                     <TextButton
                       icon={VscSearch}
                       onClick={() => {
-                        setShowSearch(!showSearch);
+                        dispatch(
+                          setSearchClickedAt({
+                            cellIndex: activeCellIndex,
+                            searchClickedAt: Date.now(),
+                          }),
+                        );
                       }}
                     >
                       Search

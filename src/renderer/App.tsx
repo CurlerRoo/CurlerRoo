@@ -47,6 +47,7 @@ import GitHubButton from 'react-github-btn';
 import { v4 } from 'uuid';
 import { useSharedLink } from './lib/hooks/use-shared-link';
 import { Resizable } from 're-resizable';
+import scrollIntoView from 'scroll-into-view-if-needed';
 
 function HomeCells() {
   const dispatch: AppDispatch = useDispatch();
@@ -61,6 +62,9 @@ function HomeCells() {
   const activeCellIndex = activeDocument?.activeCellIndex;
   const executingAllCells = activeDocument?.executingAllCells;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const cellsRefreshedAt = useMemo(() => new Date().getTime(), [filePath]);
+
   useEffect(() => {
     const cellElement = document.getElementById(`cell-${activeCellIndex}`);
 
@@ -74,13 +78,22 @@ function HomeCells() {
     };
 
     if (cellElement && !isInViewport(cellElement)) {
-      cellElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-        inline: 'start',
-      });
+      const delay = (() => {
+        if (activeCellIndex === 0) {
+          return 0;
+        }
+        const mountedTime = new Date().getTime() - cellsRefreshedAt;
+        return mountedTime < 1000 ? 1000 - mountedTime : 0;
+      })();
+      setTimeout(() => {
+        scrollIntoView(cellElement, {
+          behavior: 'smooth',
+          block: 'start',
+          inline: 'start',
+        });
+      }, delay); // wait for cell to render if the component is just mounted
     }
-  }, [activeCellIndex]);
+  }, [activeCellIndex, cellsRefreshedAt]);
 
   const { selectedDirectory, selectedSubDirectoryOrFile } = useSelector(
     (state: RootState) => state.selectedDirectory,
@@ -399,7 +412,6 @@ function HomeCells() {
                                 body: [''],
                                 headers: {},
                                 status: 0,
-                                showSearch: false,
                                 responseDate: 0,
                                 formattedBody: '',
                               },

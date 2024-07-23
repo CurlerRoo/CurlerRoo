@@ -57,7 +57,6 @@ export const exampleDocument: DocType = {
           bodyFilePath: '',
           bodyBase64: '',
           formattedBody: '',
-          showSearch: false,
           body: [
             '[',
             '  {',
@@ -1349,7 +1348,6 @@ export const exampleDocument: DocType = {
           ],
           responseDate: 1705325965983,
           formattedBody: '',
-          showSearch: false,
         },
       ],
       source: [
@@ -1423,7 +1421,6 @@ export const exampleDocument: DocType = {
           ],
           responseDate: 1705325966283,
           formattedBody: '',
-          showSearch: false,
         },
       ],
       source: [
@@ -1496,7 +1493,6 @@ export const exampleDocument: DocType = {
           ],
           responseDate: 1705325966651,
           formattedBody: '',
-          showSearch: false,
         },
       ],
       source: [

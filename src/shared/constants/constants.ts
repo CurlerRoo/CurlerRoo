@@ -16,11 +16,13 @@ type THEME_VALUES = {
   GREY: string;
   GREY1: string;
   GREY2: string;
+  GREY3: string;
   MID_BLUE: string;
   BLACK_EAL: string;
   AZURE: string;
   PASTEL_GREY: string;
   WHITE: string;
+  YELLOW: string;
 };
 
 export const COLORS: {
@@ -36,11 +38,13 @@ export const COLORS: {
     GREY: '888888',
     GREY1: 'aaaaaa',
     GREY2: 'c8c8c8',
+    GREY3: 'e8e8e8',
     MID_BLUE: '007bff',
     BLACK_EAL: '444444',
     AZURE: '1890ff',
     PASTEL_GREY: 'cccccc',
     WHITE: 'ffffff',
+    YELLOW: 'FFEA00',
   },
   DARK_MODE: {
     BLUE: '0550ae',
@@ -52,11 +56,13 @@ export const COLORS: {
     GREY: '888888',
     GREY1: 'aaaaaa',
     GREY2: 'c8c8c8',
+    GREY3: 'e8e8e8',
     MID_BLUE: '007bff',
     BLACK_EAL: '444444',
     AZURE: '1890ff',
     PASTEL_GREY: 'cccccc',
     WHITE: 'ffffff',
+    YELLOW: 'FFEA00',
   },
 };
 

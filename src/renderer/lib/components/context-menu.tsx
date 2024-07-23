@@ -128,14 +128,16 @@ export const useContextMenu = ({
       if (menuContextKey === key) {
         e.preventDefault();
         const Menu = menu({ e, customData });
-        setMenuPortal(
-          createPortal(
-            <PopMenu clientX={e.clientX} clientY={e.clientY}>
-              <Menu />
-            </PopMenu>,
-            document.body,
-          ),
-        );
+        setTimeout(() => {
+          setMenuPortal(
+            createPortal(
+              <PopMenu clientX={e.clientX} clientY={e.clientY}>
+                <Menu />
+              </PopMenu>,
+              document.body,
+            ),
+          );
+        });
       }
     };
     document.addEventListener('contextmenu', listener);

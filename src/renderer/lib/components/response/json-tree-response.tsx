@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
-import { useDebounce } from 'react-use';
 import _ from 'lodash';
 import { prompt } from '../input-prompt';
 import { COLORS, THEME } from '@constants';
@@ -16,117 +15,16 @@ import {
   addPathToJSONTokens,
   tokenizeJSON,
 } from '../../../../shared/tokenize-json';
-import {
-  HighlightedTokenizedText,
-  getHightlightedTokenizedText,
-  getLowlightAndHighlightSpans,
-} from '../../../../shared/text-search';
 import { RootState } from '../../../state/store';
-import { HighPerformanceScroll } from '../high-performance-scroll';
-import { HotkeyOnFocus } from '../hotkey-on-focus';
-import { useSearchBar } from '../../hooks/use-search-bar';
-import { responseHandlerTypeToFeature } from './configs';
-import { debugLog } from '../../../../shared/utils';
-import { PlainTextResponse } from './plain-text-response';
-
-const StringHoverHighlight = styled.span`
-  &:hover {
-    background-color: #${COLORS[THEME].RED} !important;
-    color: white !important;
-  }
-  color: #${COLORS[THEME].RED} !important;
-  border-radius: 4px;
-  cursor: pointer;
-  word-break: break-all;
-`;
-
-const NumberHoverHighlight = styled.span`
-  &:hover {
-    background-color: #${COLORS[THEME].BLUE} !important;
-    color: white !important;
-  }
-  color: #${COLORS[THEME].BLUE} !important;
-  border-radius: 4px;
-  cursor: pointer;
-  word-break: break-all;
-`;
-
-const BooleanHoverHighlight = styled.span`
-  &:hover {
-    background-color: #${COLORS[THEME].BLUE} !important;
-    color: white !important;
-  }
-  color: #${COLORS[THEME].BLUE} !important;
-  border-radius: 4px;
-  cursor: pointer;
-  word-break: break-all;
-`;
-
-const NullHoverHighlight = styled.span`
-  &:hover {
-    background-color: #${COLORS[THEME].BLUE} !important;
-    color: white !important;
-  }
-  color: #${COLORS[THEME].BLUE} !important;
-  border-radius: 4px;
-  cursor: pointer;
-  word-break: break-all;
-`;
-
-const KeyHoverHighlight = styled.span`
-  &:hover {
-    background-color: #${COLORS[THEME].GREEN} !important;
-    color: white !important;
-  }
-  color: #${COLORS[THEME].GREEN} !important;
-  border-radius: 4px;
-  cursor: pointer;
-  word-break: break-all;
-`;
-
-const Highlight = styled.span`
-  background-color: rgba(255, 255, 0, 0.5);
-  word-break: break-all;
-`;
-
-const Selected = styled.span`
-  background-color: rgba(127, 127, 0, 0.5);
-  word-break: break-all;
-`;
-
-const Lowlight = styled.span`
-  word-break: break-all;
-`;
-
-function JsonTokenHoverHighlight({
-  token,
-  children,
-  ...props
-}: {
-  token: HighlightedTokenizedText;
-  children: any;
-  props?: any;
-}) {
-  const Component = (() => {
-    if (token.type === 'string') {
-      return StringHoverHighlight;
-    }
-    if (token.type === 'number') {
-      return NumberHoverHighlight;
-    }
-    if (token.type === 'boolean') {
-      return BooleanHoverHighlight;
-    }
-    if (token.type === 'null') {
-      return NullHoverHighlight;
-    }
-    if (token.type === 'key') {
-      return KeyHoverHighlight;
-    }
-    throw new Error('Invalid type');
-  })();
-  return <Component {...props}>{children}</Component>;
-}
+import CodeMirror, {
+  EditorView,
+  ReactCodeMirrorRef,
+  Statistics,
+} from '@uiw/react-codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { useWatchForRefReady } from '../../hooks/use-watch-for-ref-ready';
+import { search, openSearchPanel } from '@codemirror/search';
+import { useUpdateEffect } from 'react-use';
 
 const MenuItemHoverHighlight = styled.div`
   &:hover {
@@ -135,205 +33,6 @@ const MenuItemHoverHighlight = styled.div`
   padding: 8px;
   cursor: pointer;
 `;
-
-function JsonSubTree({
-  token,
-  getContextMenuProps,
-  searchResultSelectedIndex,
-}: {
-  token: HighlightedTokenizedText;
-  getContextMenuProps: ({ customData }: { customData?: any }) => any;
-  searchResultSelectedIndex?: number;
-}): {
-  value: any;
-} {
-  const spans = (() => {
-    if (!token.highlights?.length) {
-      return [
-        {
-          value: token.value,
-          type: 'lowlight',
-          position: 0,
-        },
-      ];
-    }
-    return getLowlightAndHighlightSpans({
-      text: token.value,
-      highlights: token.highlights.map((m) => ({
-        start: m.start - token.start,
-        end: m.end - token.start,
-        index: m.index,
-      })),
-      searchResultSelectedIndex,
-    });
-  })();
-
-  if (['string', 'number', 'boolean', 'null'].includes(token.type)) {
-    return {
-      value: (
-        <JsonTokenHoverHighlight token={token}>
-          {spans.map((span, i) => {
-            if (span.type === 'highlight') {
-              return (
-                <Highlight
-                  key={i}
-                  {...getContextMenuProps({
-                    customData: {
-                      type: token.type,
-                      tree: token.path,
-                    },
-                  })}
-                  data-token-start={token.start + span.position}
-                  data-token-end={token.end + span.position}
-                  data-token-index={token.index}
-                >
-                  {span.value}
-                </Highlight>
-              );
-            }
-            if (span.type === 'selected') {
-              return (
-                <Selected
-                  key={i}
-                  {...getContextMenuProps({
-                    customData: {
-                      type: token.type,
-                      tree: token.path,
-                    },
-                  })}
-                  data-token-start={token.start + span.position}
-                  data-token-end={token.end + span.position}
-                  data-token-index={token.index}
-                >
-                  {span.value}
-                </Selected>
-              );
-            }
-            return (
-              <Lowlight
-                key={i}
-                {...getContextMenuProps({
-                  customData: {
-                    type: token.type,
-                    tree: token.path,
-                  },
-                })}
-                data-token-start={token.start + span.position}
-                data-token-end={token.end + span.position}
-                data-token-index={token.index}
-              >
-                {span.value}
-              </Lowlight>
-            );
-          })}
-        </JsonTokenHoverHighlight>
-      ),
-    };
-  }
-  if (token.type === 'key') {
-    return {
-      value: (
-        <JsonTokenHoverHighlight token={token}>
-          {spans.map((span, i) => {
-            if (span.type === 'highlight') {
-              return (
-                <Highlight
-                  key={i}
-                  {...getContextMenuProps({
-                    customData: {
-                      type: token.type,
-                      tree: token.path,
-                    },
-                  })}
-                  data-token-start={token.start + span.position}
-                  data-token-end={token.end + span.position}
-                  data-token-index={token.index}
-                >
-                  {span.value}
-                </Highlight>
-              );
-            }
-            if (span.type === 'selected') {
-              return (
-                <Selected
-                  key={i}
-                  {...getContextMenuProps({
-                    customData: {
-                      type: token.type,
-                      tree: token.path,
-                    },
-                  })}
-                  data-token-start={token.start + span.position}
-                  data-token-end={token.end + span.position}
-                  data-token-index={token.index}
-                >
-                  {span.value}
-                </Selected>
-              );
-            }
-            return (
-              <Lowlight
-                key={i}
-                {...getContextMenuProps({
-                  customData: {
-                    type: token.type,
-                    tree: token.path,
-                  },
-                })}
-                data-token-start={token.start + span.position}
-                data-token-end={token.end + span.position}
-                data-token-index={token.index}
-              >
-                {span.value}
-              </Lowlight>
-            );
-          })}
-        </JsonTokenHoverHighlight>
-      ),
-    };
-  }
-  if (token.type === 'structural') {
-    return {
-      value: spans.map((span, i) => {
-        if (span.type === 'highlight') {
-          return (
-            <Highlight
-              key={i}
-              data-token-start={token.start + span.position}
-              data-token-end={token.end + span.position}
-              data-token-index={token.index}
-            >
-              {span.value}
-            </Highlight>
-          );
-        }
-        if (span.type === 'selected') {
-          return (
-            <Selected
-              key={i}
-              data-token-start={token.start + span.position}
-              data-token-end={token.end + span.position}
-              data-token-index={token.index}
-            >
-              {span.value}
-            </Selected>
-          );
-        }
-        return (
-          <Lowlight
-            key={i}
-            data-token-start={token.start + span.position}
-            data-token-end={token.end + span.position}
-            data-token-index={token.index}
-          >
-            {span.value}
-          </Lowlight>
-        );
-      }),
-    };
-  }
-  throw new Error('Invalid AST');
-}
 
 const validateVariableName = async (value: string | null) => {
   // user cancelled
@@ -383,15 +82,6 @@ export function JsonTreeResponse({
       .formattedBody;
   });
 
-  const { input, showSearch, setShowSearch, searchResultSelectedIndex } =
-    useSearchBar({ activeCellIndex, bodyText: formattedBody || '' });
-
-  const contentLength = joined.length;
-  const [selection, setSelection] = useState<{
-    startPosition: number;
-    endPosition: number;
-  } | null>(null);
-
   const obj = useMemo(() => {
     try {
       return JSON.parse(joined);
@@ -399,11 +89,6 @@ export function JsonTreeResponse({
       return null;
     }
   }, [joined]);
-
-  const textSearchResult = useSelector((state: RootState) => {
-    return _.last(state.activeDocument?.cells[activeCellIndex].outputs)
-      ?.searchResult;
-  });
 
   const onClickCreateVariable = useMemo(() => {
     return ({
@@ -433,111 +118,6 @@ export function JsonTreeResponse({
     };
   }, [activeCellIndex, dispatch]);
 
-  const [focused, setFocused] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'c' && focused) {
-        const selectedText = formattedBody?.substring(
-          selection?.startPosition ?? 0,
-          selection?.endPosition ?? 0,
-        );
-        if (!selectedText) {
-          return;
-        }
-        event.preventDefault();
-        navigator.clipboard.writeText(selectedText);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [
-    formattedBody,
-    selection?.startPosition,
-    selection?.endPosition,
-    focused,
-  ]);
-
-  const contextMenu = useContextMenu({
-    menu:
-      ({ customData }) =>
-      () => {
-        if (window.getSelection()?.toString()) {
-          return (
-            <div>
-              <MenuItemHoverHighlight
-                onClick={() => {
-                  const selectedText = formattedBody?.substring(
-                    selection?.startPosition ?? 0,
-                    selection?.endPosition ?? 0,
-                  );
-                  if (!selectedText) {
-                    return;
-                  }
-                  navigator.clipboard.writeText(selectedText);
-                  contextMenu.close();
-                }}
-              >
-                Copy selection
-              </MenuItemHoverHighlight>
-            </div>
-          );
-        }
-        return (
-          <div>
-            <MenuItemHoverHighlight
-              onClick={async () => {
-                const [name] = await prompt([
-                  { label: 'Variable name:', onConfirm: validateVariableName },
-                ]);
-                if (!name) {
-                  return;
-                }
-                onClickCreateVariable?.({
-                  tree: customData.tree,
-                  name,
-                  value: getValueByPath(obj, customData.tree),
-                });
-                contextMenu.close();
-              }}
-            >
-              Create variable
-            </MenuItemHoverHighlight>
-            <div
-              style={{
-                height: 1,
-                width: '100%',
-                backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
-              }}
-            />
-            <MenuItemHoverHighlight
-              onClick={() => {
-                const value = getValueByPath(obj, customData.tree);
-                navigator.clipboard.writeText(
-                  typeof value === 'string'
-                    ? value
-                    : JSON.stringify(value, null, 2),
-                );
-                contextMenu.close();
-              }}
-            >
-              Copy value
-            </MenuItemHoverHighlight>
-          </div>
-        );
-      },
-  });
-
-  const [jsonTokensByLine, setJsonTokensByLine] =
-    useState<Record<number, HighlightedTokenizedText[]>>();
-
-  const [lineByHighlightIndex, setLineByHighlightIndex] =
-    useState<Record<number, number>>();
-
   const tokenizedTexts = useMemo(() => {
     if (!formattedBody) {
       return null;
@@ -547,128 +127,143 @@ export function JsonTreeResponse({
     });
   }, [formattedBody]);
 
-  // useDebounce instead of useEffect
-  // confirmed that the UI feels much more responsive with this
-  useDebounce(
-    () => {
-      try {
-        if (!tokenizedTexts) {
-          return null;
-        }
+  const statisticsRef: MutableRefObject<Statistics | null> = useRef(null);
 
-        const tokens = getHightlightedTokenizedText({
-          tokenizedTexts,
-          matchedLocations: textSearchResult || [],
-        });
-        const lineByHighlightIndex = _(tokens)
-          .flatMap((token) =>
-            (token.highlights || []).map((highlight) => ({
-              highlight,
-              token,
-            })),
-          )
-          .groupBy((m) => m.highlight.index)
-          .mapValues((m) => m[0].token.startLine)
-          .value();
-        setLineByHighlightIndex(lineByHighlightIndex);
-        const tokensByLine = _(tokens)
-          .groupBy((m) => m.startLine)
-          .value();
-        return setJsonTokensByLine(tokensByLine);
-      } catch (e) {
+  const contextMenu = useContextMenu({
+    menu: () => () => {
+      if (!statisticsRef.current) {
         return null;
       }
+      const { from, to } = statisticsRef.current.selectionAsSingle;
+      const token = _.find(tokenizedTexts, (m) => {
+        return m.start <= from && m.end >= to;
+      });
+      if (!token) {
+        return null;
+      }
+      return (
+        <div>
+          <MenuItemHoverHighlight
+            onClick={async () => {
+              const [name] = await prompt([
+                { label: 'Variable name:', onConfirm: validateVariableName },
+              ]);
+              if (!name) {
+                return;
+              }
+              onClickCreateVariable?.({
+                tree: token.path,
+                name,
+                value: getValueByPath(obj, token.path),
+              });
+              contextMenu.close();
+            }}
+          >
+            Create variable from:{' '}
+            <code
+              style={{
+                backgroundColor: `#${COLORS[THEME].GREY3}`,
+              }}
+            >
+              {token.path.length > 40
+                ? `${token.path.slice(0, 20)}(...)${token.path.slice(-20)}`
+                : token.path}
+            </code>
+          </MenuItemHoverHighlight>
+          <div
+            style={{
+              height: 1,
+              width: '100%',
+              backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+            }}
+          />
+          <MenuItemHoverHighlight
+            onClick={() => {
+              navigator.clipboard.writeText(
+                typeof token.value === 'string'
+                  ? token.value
+                  : JSON.stringify(token.value, null, 2),
+              );
+              contextMenu.close();
+            }}
+          >
+            Copy:{' '}
+            <code
+              style={{
+                backgroundColor: `#${COLORS[THEME].GREY3}`,
+              }}
+            >
+              {token.value.length > 40
+                ? `${token.value.slice(0, 40)}...`
+                : token.value}
+            </code>
+          </MenuItemHoverHighlight>
+        </div>
+      );
     },
-    0,
-    [textSearchResult],
+  });
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  useWatchForRefReady(wrapperRef);
+
+  const codeMirrorRef = useRef<ReactCodeMirrorRef>(null);
+
+  const searchClickedAt = useSelector((state: RootState) => {
+    return state.activeDocument?.cells[activeCellIndex].outputs.slice(-1)[0]
+      .searchClickedAt;
+  });
+
+  useUpdateEffect(() => {
+    if (searchClickedAt) {
+      const codeMirror = codeMirrorRef.current?.view;
+      if (codeMirror) {
+        openSearchPanel(codeMirror);
+      }
+    }
+  }, [searchClickedAt]);
+
+  const { wordWrappingInEditor } = useSelector(
+    (state: RootState) => state.user,
   );
 
-  const scrollToLine = lineByHighlightIndex?.[searchResultSelectedIndex ?? 0];
-
-  debugLog('HVH', 'contentLength', contentLength);
-  if (contentLength > 5000000) {
-    return (
-      <PlainTextResponse
-        activeCellIndex={activeCellIndex}
-        response={response}
-      />
-    );
-  }
-  if (!jsonTokensByLine) {
-    return null;
-  }
-
   return (
-    <HotkeyOnFocus
+    <div
+      ref={wrapperRef}
       style={{
         height: 'calc(100% - 10px)',
         width: '100%',
         position: 'relative',
       }}
-      onCtrlF={({ ref }) => {
-        if (!responseHandlerTypeToFeature['JSON'].includes('Search')) {
-          return;
-        }
-        setShowSearch(!showSearch);
-        if (showSearch) {
-          // if showSearch is true, then we are hiding the search bar
-          ref.current?.focus();
-        }
-      }}
-      onFocus={() => {
-        setFocused(true);
-      }}
-      onBlur={() => {
-        setFocused(false);
-      }}
+      {...contextMenu.getProps()}
     >
-      {input}
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          outline: 'none',
+      {contextMenu.menuPortal}
+      <CodeMirror
+        ref={codeMirrorRef}
+        readOnly
+        extensions={[
+          javascript(),
+          search({
+            top: true,
+          }),
+          ...(wordWrappingInEditor ? [EditorView.lineWrapping] : []),
+        ]}
+        onContextMenu={async (e) => {
+          e.preventDefault();
+          // await for statistics to be updated
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve);
+          });
         }}
-        tabIndex={0}
-      >
-        {contextMenu.menuPortal}
-        <HighPerformanceScroll
-          onSelectionChange={({ startPosition, endPosition }) => {
-            setSelection({ startPosition, endPosition });
-          }}
-          itemCount={_(jsonTokensByLine).keys().value().length}
-          estimateSize={(index) => {
-            const tokens = jsonTokensByLine[index];
-            const tokensStart = tokens[0].start;
-            const tokensEnd = tokens[tokens.length - 1].end;
-            return Math.ceil((tokensEnd - tokensStart) / 100) * 20; // TODO: 100
-          }}
-          getItem={(index) => {
-            const tokens = jsonTokensByLine[index];
-            const tokenIndexStart = tokens[0].index;
-            const tokenIndexEnd = tokens[tokens.length - 1].index;
-            const tokensStart = tokens[0].start;
-            const tokensEnd = tokens[tokens.length - 1].end;
-            return {
-              tokenIndexStart,
-              tokenIndexEnd,
-              tokensStart,
-              tokensEnd,
-              item: tokens.map((token) => {
-                const { value } = JsonSubTree({
-                  token,
-                  getContextMenuProps: contextMenu.getProps,
-                  searchResultSelectedIndex,
-                });
-                return (
-                  <React.Fragment key={token.index}>{value}</React.Fragment>
-                );
-              }),
-            };
-          }}
-          scrollToLine={scrollToLine}
-        />
-      </div>
-    </HotkeyOnFocus>
+        onStatistics={(statistics) => {
+          statisticsRef.current = statistics;
+        }}
+        height={
+          (wrapperRef.current?.clientHeight || 0) > 0
+            ? `${wrapperRef.current?.clientHeight}px`
+            : `${300}px`
+        }
+        value={formattedBody}
+      />
+    </div>
   );
 }

@@ -184,7 +184,6 @@ const saveFileSystemToLocalStorage = async () => {
               body: [''],
               headers: {},
               status: 0,
-              showSearch: false,
               responseDate: 0,
               formattedBody: '',
             },
