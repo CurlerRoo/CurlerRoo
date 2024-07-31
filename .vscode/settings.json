@@ -30,13 +30,7 @@
   "editor.fontFamily": "Ubuntu Mono",
   "editor.codeLensFontFamily": "Roboto Mono",
   "editor.inlayHints.fontFamily": "Roboto Mono",
-  "editor.fontSize": 15,
-  "editor.lineHeight": 1.25,
-  "editor.fontWeight": "400",
   "editor.tabSize": 2,
   "editor.fontVariations": false,
-  "terminal.integrated.fontFamily": "Ubuntu Mono",
-  "terminal.integrated.fontSize": 15,
-  "terminal.integrated.lineHeight": 1.25,
   "prettier.trailingComma": "all"
 }
