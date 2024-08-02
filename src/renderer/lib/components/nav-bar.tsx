@@ -402,7 +402,7 @@ export function NavBar({
       style={{
         display: 'flex',
         flexDirection: 'row',
-        gap: 15,
+        gap: 10,
         flexWrap: 'wrap',
       }}
     >
@@ -465,7 +465,7 @@ export function NavBar({
         Run All
       </TextButton>
       <TextButton icon={VscCloudUpload} onClick={confirmCreateShareLink}>
-        Create Share Link
+        Share
       </TextButton>
       {PLATFORM !== 'browser' && (
         <TextButton
