@@ -219,6 +219,7 @@
     ],
     "afterSign": ".erb/scripts/notarize.js",
     "mac": {
+      "icon": "src/assets/icon.icns",
       "notarize": {
         "teamId": "DS3PFP3PPJ"
       },
