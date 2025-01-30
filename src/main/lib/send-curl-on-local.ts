@@ -6,24 +6,23 @@ import { Variable } from '../../shared/types';
 import { formatCurl } from '../../shared/format-curl';
 import { getCurlParts } from '../../shared/get-curl-parts';
 import { parseCurlResponse } from '../../shared/parse-curl-response';
-import { ASSETS_PATH } from './constants';
 import { execShPromise } from './exec-sh';
 import { debugLog, findVariableFromCurlPartValue } from '../../shared/utils';
-import { SendCurlFunction } from '../../shared/send-curl-interface';
-import { readFileAsBase64 } from './file-on-disk';
 
-export const sendCurl: SendCurlFunction = async ({
+export const sendCurlOnLocal = async ({
   curlRequest,
   variables = [],
   selectedDirectory,
+  assetsPath,
 }: {
   curlRequest: string;
   variables: Variable[];
   selectedDirectory: string;
+  assetsPath: string;
 }) => {
   const arch = process.arch === 'arm64' ? 'arm64' : 'amd64';
   const platform = process.platform === 'darwin' ? 'macos' : 'static';
-  const curlReplacement = `${ASSETS_PATH}/curl-${platform}-${arch}-8.5.0/curl`;
+  const curlReplacement = `${assetsPath}/curl-${platform}-${arch}-8.5.0/curl`;
 
   const bodyFilePath = await tmpPromise.file().then((m) => m.path);
 

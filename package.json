@@ -6,7 +6,10 @@
     "url": "git+https://github.com/CurlerRoo/CurlerRoo.git"
   },
   "author": "CurlerRoo <pclover.exe@gmail.com>",
-  "main": "./src/main/main.ts",
+  "main": "./.erb/dll/main.bundle.dev.js",
+  "bin": {
+    "curlerroo-cli": "cli-dist/cli/index.js"
+  },
   "scripts": {
     "build": "concurrently \"npm run build:main\" \"npm run build:renderer\"",
     "build:dll": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
@@ -14,16 +17,20 @@
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
     "deploy": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
-    "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
-    "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
+    "prestart": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.dev.ts",
+    "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run prestart && npm run start:renderer",
+    "start:main": "concurrently -k \"cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --watch --config ./.erb/configs/webpack.config.main.dev.ts\" \"electronmon .\"",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest"
   },
-  "browserslist": [],
+  "browserslist": [
+    "extends browserslist-config-erb"
+  ],
   "prettier": {
     "singleQuote": true,
     "overrides": [
@@ -79,6 +86,7 @@
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-xml": "^6.1.0",
     "@codemirror/search": "^6.5.6",
+    "@electron/notarize": "^2.3.2",
     "@monaco-editor/react": "^4.6.0",
     "@reduxjs/toolkit": "^1.9.7",
     "@tanstack/react-virtual": "^3.0.1",
@@ -92,6 +100,7 @@
     "electron-updater": "^6.1.7",
     "fast-xml-parser": "^4.3.3",
     "fs-extra": "^11.2.0",
+    "glob": "^11.0.0",
     "ip": "^2.0.1",
     "is-mobile": "^4.0.0",
     "isbinaryfile": "^5.0.2",
@@ -119,12 +128,10 @@
     "scroll-into-view-if-needed": "^3.1.0",
     "styled-components": "^6.1.8",
     "tmp-promise": "^3.0.3",
-    "tsconfig-paths": "^4.2.0",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@electron/notarize": "^2.2.0",
     "@electron/rebuild": "^3.5.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@svgr/webpack": "^8.1.0",
@@ -163,8 +170,8 @@
     "css-loader": "^6.9.0",
     "css-minimizer-webpack-plugin": "^5.0.1",
     "detect-port": "^1.5.1",
-    "electron": "^27.2.2",
-    "electron-builder": "^24.9.1",
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3",
     "electron-devtools-installer": "^3.2.0",
     "electronmon": "^2.0.2",
     "eslint": "^8.56.0",
@@ -199,7 +206,6 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths-webpack-plugin": "^4.1.0",
     "typescript": "^5.3.3",
-    "uglify-js": "^3.17.4",
     "url-loader": "^4.1.1",
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "^4.10.1",
@@ -217,9 +223,9 @@
       "node_modules",
       "package.json"
     ],
-    "afterSign": ".erb/scripts/notarize.js",
     "mac": {
       "icon": "src/assets/icon.icns",
+      "sign": ".erb/scripts/notarize.js",
       "notarize": {
         "teamId": "DS3PFP3PPJ"
       },
@@ -273,13 +279,22 @@
     ]
   },
   "devEngines": {
-    "node": ">=14.x",
-    "npm": ">=7.x"
+    "runtime": {
+      "name": "node",
+      "version": ">=14.x",
+      "onFail": "error"
+    },
+    "packageManager": {
+      "name": "npm",
+      "version": ">=7.x",
+      "onFail": "error"
+    }
   },
   "electronmon": {
     "patterns": [
       "!**/**",
-      "src/main/**"
+      "src/main/**",
+      ".erb/dll/**"
     ],
     "logLevel": "quiet"
   }

@@ -84,7 +84,13 @@ export function execSh(command, options, callback) {
   return child;
 }
 
-export function execShPromise(command, options) {
+export function execShPromise(
+  command,
+  options,
+): Promise<{
+  stderr: string;
+  stdout: string;
+}> {
   return new Promise(function (resolve, reject) {
     execSh(command, options, function (err, stdout, stderr) {
       if (err) {

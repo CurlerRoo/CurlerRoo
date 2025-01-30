@@ -32,5 +32,8 @@
   "editor.inlayHints.fontFamily": "Roboto Mono",
   "editor.tabSize": 2,
   "editor.fontVariations": false,
-  "prettier.trailingComma": "all"
+  "prettier.trailingComma": "all",
+  "editor.formatOnSave": true,
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifier": "relative"
 }

@@ -68,6 +68,29 @@ export const store = configureStore({
   },
 });
 
+export const createNewStore = () => {
+  return configureStore({
+    reducer: {
+      [activeDocumentSlice.name]: activeDocumentSlice.reducer,
+      [selectedDirectorySlice.name]: persistedSelectedDirectorySliceReducer,
+      [userSlice.name]: persistedUserSliceReducer,
+      [dragSlice.name]: dragSlice.reducer,
+      [updatesSlice.name]: persistedUpdatesSliceReducer,
+    },
+    middleware: (getDefaultMiddleware) => {
+      const middlewares = getDefaultMiddleware({
+        serializableCheck: false,
+      });
+      // add logger
+      middlewares.push((api) => (next) => (action) => {
+        debugLog('dispatching', action);
+        return next(action);
+      });
+      return middlewares;
+    },
+  });
+};
+
 export const persistor = persistStore(store);
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

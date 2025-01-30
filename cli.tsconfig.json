@@ -15,14 +15,15 @@
     "baseUrl": ".",
     "paths": {
       "@file": ["src/main/lib/file-on-disk"],
-      "@send-curl": ["src/main/lib/send-curl-on-electron"],
-      "@services": ["src/renderer/services/services-on-electron"],
+      "@send-curl": ["src/main/lib/send-curl-on-cli"],
+      "@services": ["src/renderer/services/services-on-cli"],
       "@constants": ["src/shared/constants/constants-on-electron"],
     },
-    "outDir": ".erb/dll"
+    "outDir": "cli-dist"
   },
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   },
-  "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
+  "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"],
+  "files": ["src/cli/index.ts"]
 }
