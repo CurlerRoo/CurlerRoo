@@ -43,7 +43,7 @@ const OS = (() => {
   return 'linux';
 })();
 
-export const PATH_SEPARATOR = OS === 'win32' ? '\\' : '/';
+export const PATH_SEPARATOR = '/';
 
 export const ENABLE_UPDATE_FEATURE = false;
 export const USE_IN_MEMORY_FILE_SYSTEM = true;

@@ -80,7 +80,7 @@ export const curlKeysWithValues = [
   '-T',
   '--upload-file',
   // '--variable', TODO: support it in the future
-];
+] as const;
 
 export const curlKeysWithoutValues = [
   '-G',
@@ -142,7 +142,7 @@ export const curlKeysWithoutValues = [
   '--tlsv1.2',
   '--tlsv1.3',
   '--tr-encoding',
-];
+] as const;
 
 export const curlKeys = [...curlKeysWithValues, ...curlKeysWithoutValues];
 

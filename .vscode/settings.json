@@ -27,9 +27,6 @@
     "package-lock.json": true,
     "*.{css,sass,scss}.d.ts": true
   },
-  "editor.fontFamily": "Ubuntu Mono",
-  "editor.codeLensFontFamily": "Roboto Mono",
-  "editor.inlayHints.fontFamily": "Roboto Mono",
   "editor.tabSize": 2,
   "editor.fontVariations": false,
   "prettier.trailingComma": "all",

@@ -156,6 +156,7 @@ export const createFileWithContent = createAsyncThunk<
 
 export const fixSelectedSubDirectoryOrFile = createAsyncThunk<
   {
+    selectedDirectory: string;
     selectedSubDirectoryOrFile: string;
     selectedSubType: 'directory' | 'file';
   },
@@ -168,7 +169,16 @@ export const fixSelectedSubDirectoryOrFile = createAsyncThunk<
       thunkAPI.getState().selectedDirectory;
 
     if (!selectedSubDirectoryOrFile || !selectedDirectory || !selectedSubType) {
-      throw new Error('adfglkerhgd32');
+      // reset the file system if it's broken
+      return {
+        selectedDirectory: IN_MEMORY_FILE_SYSTEM_DEFAULT_FILE_PATH.split(
+          PATH_SEPARATOR,
+        )
+          .slice(0, -1)
+          .join(PATH_SEPARATOR),
+        selectedSubDirectoryOrFile: IN_MEMORY_FILE_SYSTEM_DEFAULT_FILE_PATH,
+        selectedSubType: 'file',
+      };
     }
 
     const fixedPath = await Services.fixSelectedSubDirectoryOrFile({
@@ -177,7 +187,10 @@ export const fixSelectedSubDirectoryOrFile = createAsyncThunk<
       selectedSubType,
     });
 
-    return fixedPath;
+    return {
+      selectedDirectory,
+      ...fixedPath,
+    };
   },
 );
 
@@ -291,6 +304,7 @@ export const selectedDirectorySlice = createSlice({
         state.selectedSubDirectoryOrFile =
           action.payload.selectedSubDirectoryOrFile;
         state.selectedSubType = action.payload.selectedSubType;
+        state.selectedDirectory = action.payload.selectedDirectory;
       },
     );
   },
