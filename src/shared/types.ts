@@ -81,7 +81,7 @@ export const docCellSchema = z.object({
   outputs: z.array(
     z.object({
       protocol: z.string(),
-      headers: z.record(z.string()),
+      headers: z.record(z.string(), z.string()),
       status: z.number(),
       bodyFilePath: z.string(),
       body: z.array(z.string()),
@@ -132,7 +132,7 @@ export const docOnDiskCellSchema = z.object({
   outputs: z.array(
     z.object({
       protocol: z.string(),
-      headers: z.record(z.string()),
+      headers: z.record(z.string(), z.string()),
       status: z.number(),
       bodyFilePath: z.string().optional(),
       bodyBase64: z.string().optional(),

@@ -8,6 +8,7 @@ import { getCurlParts } from '../../shared/get-curl-parts';
 import { parseCurlResponse } from '../../shared/parse-curl-response';
 import { execShPromise } from './exec-sh';
 import { debugLog, findVariableFromCurlPartValue } from '../../shared/utils';
+import { CURL_VERSION } from '../../shared/constants/constants';
 
 export const sendCurlOnLocal = async ({
   curlRequest,
@@ -22,7 +23,7 @@ export const sendCurlOnLocal = async ({
 }) => {
   const arch = process.arch === 'arm64' ? 'arm64' : 'amd64';
   const platform = process.platform === 'darwin' ? 'macos' : 'static';
-  const curlReplacement = `${assetsPath}/curl-${platform}-${arch}-8.5.0/curl`;
+  const curlReplacement = `${assetsPath}/curl-${platform}-${arch}-${CURL_VERSION}/curl`;
 
   const bodyFilePath = await tmpPromise.file().then((m) => m.path);
 

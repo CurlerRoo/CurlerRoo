@@ -34,6 +34,7 @@ import { store } from './store';
 import { exportFile, importFile, selectDirectory } from './lib/browser-folder';
 import { executeScript } from '../shared/execute-script';
 import { ExecuteScriptArgs } from '../shared/services-interface';
+import { APP_VERSION, CURL_VERSION } from '../shared/constants/constants';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -52,7 +53,7 @@ const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 if (isDebug) {
-  require('electron-debug')();
+  require('electron-debug').default();
 }
 
 const installExtensions = async () => {
@@ -150,6 +151,13 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
+    // Set up About panel options for macOS native About dialog
+    app.setAboutPanelOptions({
+      applicationName: 'CurlerRoo',
+      applicationVersion: `${APP_VERSION}\nCurl ${CURL_VERSION}\n`,
+      version: `Electron ${process.versions.electron}`,
+    });
+
     ipcMain.handle('dialog:set', async (_event, key, value) => {
       store.set(key, value);
     });
@@ -160,7 +168,7 @@ app
       store.delete(key);
     });
     ipcMain.handle('dialog:clear', async () => {
-      store.clear();
+      store.reset();
     });
     ipcMain.handle('dialog:has', async (_event, key) => {
       return store.has(key);

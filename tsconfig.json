@@ -2,12 +2,12 @@
   "compilerOptions": {
     "incremental": true,
     "target": "es2022",
-    "module": "commonjs",
+    "module": "node16",
     "lib": ["dom", "es2022"],
     "jsx": "react-jsx",
     "strict": true,
     "sourceMap": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
@@ -20,9 +20,6 @@
       "@constants": ["src/shared/constants/constants-on-electron"],
     },
     "outDir": ".erb/dll"
-  },
-  "ts-node": {
-    "require": ["tsconfig-paths/register"]
   },
   "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
 }

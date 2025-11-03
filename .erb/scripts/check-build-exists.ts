@@ -2,6 +2,7 @@
 import path from 'path';
 import chalk from 'chalk';
 import fs from 'fs';
+import { TextEncoder, TextDecoder } from 'node:util';
 import webpackPaths from '../configs/webpack.paths';
 
 const mainPath = path.join(webpackPaths.distMainPath, 'main.js');
@@ -21,4 +22,16 @@ if (!fs.existsSync(rendererPath)) {
       'The renderer process is not built yet. Build it by running "npm run build:renderer"',
     ),
   );
+}
+
+// JSDOM does not implement TextEncoder and TextDecoder
+// @ts-ignore
+if (!global.TextEncoder) {
+  // @ts-ignore
+  global.TextEncoder = TextEncoder;
+}
+// @ts-ignore
+if (!global.TextDecoder) {
+  // @ts-ignore
+  global.TextDecoder = TextDecoder;
 }

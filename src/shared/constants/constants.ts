@@ -66,7 +66,8 @@ export const COLORS: {
   },
 };
 
-export const APP_VERSION = '0.2.2';
+export const CURL_VERSION = '8.16.0';
+export const APP_VERSION = '0.2.3';
 export const TERMS_OF_SERVICE_VERSION = '0.0.1';
 export const PRIVACY_POLICY_VERSION = '0.0.1';
 export const CURLERROO_FILE_EXTENSION = 'crr';
