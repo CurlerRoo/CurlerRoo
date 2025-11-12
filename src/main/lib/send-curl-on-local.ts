@@ -21,7 +21,7 @@ export const sendCurlOnLocal = async ({
   selectedDirectory: string;
   assetsPath: string;
 }) => {
-  const arch = process.arch === 'arm64' ? 'arm64' : 'amd64';
+  const arch = process.arch === 'arm64' ? 'arm64' : 'x86_64';
   const platform = process.platform === 'darwin' ? 'macos' : 'static';
   const curlReplacement = `${assetsPath}/curl-${platform}-${arch}-${CURL_VERSION}/curl`;
 
