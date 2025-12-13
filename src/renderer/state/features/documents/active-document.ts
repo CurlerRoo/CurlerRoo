@@ -79,11 +79,12 @@ export const executePostScript = createAsyncThunk<
   {
     cellIndex: number;
     bodyText: string;
+    resHeaders?: { [key: string]: string };
   },
   { state: { activeDocument: ActiveDocumentState } }
 >(
   'activeDocument/executePostScript',
-  async ({ cellIndex, bodyText }, thunkAPI) => {
+  async ({ cellIndex, bodyText, resHeaders }, thunkAPI) => {
     const state = thunkAPI.getState().activeDocument as ActiveDocumentState;
     if (!state) {
       throw new Error('No active document');
@@ -97,7 +98,7 @@ export const executePostScript = createAsyncThunk<
     return Services.executeScript({
       postScript: cell.post_scripts.join('\n'),
       resBody: bodyText,
-      resHeaders: {},
+      resHeaders: resHeaders || {},
     });
   },
 );
@@ -167,10 +168,12 @@ export const sendCurl = createAsyncThunk<
       throw new Error('No active document');
     }
 
-    const bodyText = _.last(responses)?.bodyText;
+    const lastResponse = _.last(responses);
+    const bodyText = lastResponse?.bodyText;
+    const resHeaders = lastResponse?.headers;
     if (bodyText) {
       await thunkAPI
-        .dispatch(executePostScript({ cellIndex, bodyText }))
+        .dispatch(executePostScript({ cellIndex, bodyText, resHeaders }))
         .unwrap()
         .catch(() => {
           return {

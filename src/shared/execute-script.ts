@@ -27,6 +27,7 @@ const isValidJSON = (str: string): boolean => {
 
 export const executeScript = async ({
   resBody,
+  resHeaders,
   postScript,
   existingVariables,
 }: ExecuteScriptArgs): Promise<{
@@ -37,6 +38,13 @@ export const executeScript = async ({
     const json_body = (path) => {
       const json = ${resBody && isValidJSON(resBody) ? resBody : null};
       return getByPath(json, path);
+    };
+    const headers = (key) => {
+      const headersObj = ${JSON.stringify(resHeaders || {})};
+      const headerKey = Object.keys(headersObj).find(
+        (k) => k.toLowerCase() === key.toLowerCase()
+      );
+      return headerKey ? headersObj[headerKey] : null;
     };
     ${(existingVariables || ([] as Variable[]))
       ?.map(({ key, value }) => {
@@ -51,9 +59,8 @@ export const executeScript = async ({
 
   const declarations = ast.body
     .filter((m) => m.type === 'VariableDeclaration')
-    // @ts-ignore
     .flatMap((m) => m.declarations)
-    .map((m) => m.id.name);
+    .map((m) => (m.id as acorn.Identifier).name);
 
   const appendScripts = `JSON.stringify({
     ${declarations.join(',')}

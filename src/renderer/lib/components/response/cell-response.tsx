@@ -1,13 +1,24 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
 import { VscClearAll, VscCopy, VscSearch } from 'react-icons/vsc';
+import styled from 'styled-components';
+import CodeMirror, {
+  EditorView,
+  ReactCodeMirrorRef,
+  Statistics,
+} from '@uiw/react-codemirror';
+import { Decoration, ViewPlugin, DecorationSet } from '@codemirror/view';
 import { ResponseHandlerType, responseHandlerTypeToFeature } from './configs';
 import { TextButton } from '../text-button';
+import { useContextMenu } from '../context-menu';
+import { prompt } from '../input-prompt';
 import {
   cancelSend,
   clearOutputs,
   setSearchClickedAt,
+  addVariable,
+  appendToCellPostScript,
 } from '../../../state/features/documents/active-document';
 import { CurlCellType } from '../../../../shared/types';
 import { JsonTreeResponse } from './json-tree-response';
@@ -19,6 +30,109 @@ import { ImageResponse } from './image-response';
 import { PlainTextResponse } from './plain-text-response';
 import { XmlResponse } from './xml-response';
 import { PdfResponse } from './pdf-response';
+import {
+  useWatchForRefChanged,
+  useWatchForRefReady,
+} from '../../hooks/use-watch-for-ref-ready';
+import { RootState } from '../../../state/store';
+
+const MenuItemHoverHighlight = styled.div`
+  &:hover {
+    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
+  }
+  padding: 8px;
+  cursor: pointer;
+`;
+
+const validateVariableName = async (value: string | null) => {
+  // user cancelled
+  if (value === null) {
+    return null;
+  }
+  if (!value || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(value)) {
+    throw new Error(
+      'Variable name must start with a letter and can only contain letters, numbers, and underscores.',
+    );
+  }
+  return value;
+};
+
+const HEADER_BLOCK_GAP_LINES = 3;
+
+type HeadersOutput = {
+  protocol: string;
+  headers: {
+    [key: string]: string;
+  };
+};
+
+type CodeMirrorDocLike = {
+  lines: number;
+  line: (n: number) => { from: number };
+  lineAt: (pos: number) => { number: number; from: number };
+};
+
+const getHeaderBlockStartLine = (
+  outputs: HeadersOutput[],
+  outputIndex: number,
+): number => {
+  let lineNumber = 1; // 1-based
+  for (let i = 0; i < outputIndex; i += 1) {
+    lineNumber += 1; // protocol line
+    lineNumber += Object.keys(outputs[i].headers).length; // headers lines
+    lineNumber += HEADER_BLOCK_GAP_LINES; // empty lines between outputs
+  }
+  return lineNumber;
+};
+
+const findHeaderAtPosition = (
+  position: number,
+  outputs: HeadersOutput[],
+  doc: CodeMirrorDocLike | null | undefined,
+): { key: string; value: string; type: 'key' | 'value' } | null => {
+  if (!doc) return null;
+
+  const clickedLineNumber = doc.lineAt(position).number; // 1-based
+  let blockStartLineNumber = 1;
+
+  for (let outputIndex = 0; outputIndex < outputs.length; outputIndex += 1) {
+    const output = outputs[outputIndex];
+    const headerEntries = _(output.headers).entries().value();
+    const headerCount = headerEntries.length;
+
+    const headerLinesStart = blockStartLineNumber + 1;
+    const headerLinesEnd = headerLinesStart + headerCount - 1;
+
+    if (
+      clickedLineNumber >= headerLinesStart &&
+      clickedLineNumber <= headerLinesEnd
+    ) {
+      const headerIndex = clickedLineNumber - headerLinesStart;
+      const [key, value] = headerEntries[headerIndex];
+      const lineFrom = doc.line(clickedLineNumber).from;
+      const column = position - lineFrom;
+
+      if (column >= 0 && column < key.length) {
+        return { key, value, type: 'key' };
+      }
+
+      const valueStartColumn = key.length + 2; // ": "
+      const valueEndColumn = valueStartColumn + value.length;
+      if (column >= valueStartColumn && column <= valueEndColumn) {
+        return { key, value, type: 'value' };
+      }
+
+      return null;
+    }
+
+    // Advance to next block start line using the same logic as the headers scroll effect.
+    blockStartLineNumber += 1; // protocol line
+    blockStartLineNumber += headerCount; // headers lines
+    blockStartLineNumber += HEADER_BLOCK_GAP_LINES; // empty lines between outputs
+  }
+
+  return null;
+};
 
 const getResponseHandlerTypes = ({
   contentType,
@@ -154,6 +268,195 @@ const useResponseHandler = ({ contentType }: { contentType: string }) => {
   };
 };
 
+const useHeadersContextMenu = ({
+  headersStatisticsRef,
+  headersCodeMirrorRef,
+  outputs,
+  onClickCreateVariable,
+}: {
+  headersStatisticsRef: React.MutableRefObject<Statistics | null>;
+  headersCodeMirrorRef: React.MutableRefObject<ReactCodeMirrorRef | null>;
+  outputs: HeadersOutput[];
+  onClickCreateVariable: (params: {
+    name: string;
+    value: string;
+    headerKey: string;
+  }) => void;
+}) => {
+  const headersContextMenu = useContextMenu({
+    menu: () => () => {
+      if (!headersStatisticsRef.current) {
+        return null;
+      }
+      const { from, to } = headersStatisticsRef.current.selectionAsSingle;
+      const position = from;
+      const header = findHeaderAtPosition(
+        position,
+        outputs,
+        headersCodeMirrorRef.current?.view?.state.doc,
+      );
+
+      if (!header) {
+        return null;
+      }
+
+      const displayValue =
+        header.value.length > 40
+          ? `${header.value.slice(0, 40)}...`
+          : header.value;
+
+      return (
+        <div>
+          <MenuItemHoverHighlight
+            onClick={async () => {
+              const [name] = await prompt([
+                { label: 'Variable name:', onConfirm: validateVariableName },
+              ]);
+              if (!name) {
+                return;
+              }
+              onClickCreateVariable?.({
+                headerKey: header.key,
+                name,
+                value: header.value,
+              });
+              headersContextMenu.close();
+            }}
+          >
+            Create variable from:{' '}
+            <code
+              style={{
+                backgroundColor: `#${COLORS[THEME].GREY3}`,
+              }}
+            >
+              {header.key}
+            </code>
+          </MenuItemHoverHighlight>
+          <div
+            style={{
+              height: 1,
+              width: '100%',
+              backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+            }}
+          />
+          <MenuItemHoverHighlight
+            onClick={() => {
+              navigator.clipboard.writeText(header.value);
+              headersContextMenu.close();
+            }}
+          >
+            Copy:{' '}
+            <code
+              style={{
+                backgroundColor: `#${COLORS[THEME].GREY3}`,
+              }}
+            >
+              {displayValue}
+            </code>
+          </MenuItemHoverHighlight>
+        </div>
+      );
+    },
+  });
+
+  return headersContextMenu;
+};
+
+const formatHeadersAsText = (outputs: HeadersOutput[]): string => {
+  return outputs
+    .map((output, i) => {
+      const protocolLine = output.protocol;
+      const headerLines = _(output.headers)
+        .entries()
+        .map(([k, v]) => `${k}: ${v}`)
+        .value()
+        .join('\n');
+      const divider = i < outputs.length - 1 ? '\n\n' : '';
+      return `${protocolLine}\n${headerLines}${divider}`;
+    })
+    .join('\n\n');
+};
+
+const createHeadersDecorations = (outputs: HeadersOutput[]) => {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+
+      constructor(view: EditorView) {
+        this.decorations = this.buildDecorations(view, outputs);
+      }
+
+      update(update: any) {
+        if (update.docChanged) {
+          this.decorations = this.buildDecorations(update.view, outputs);
+        }
+      }
+
+      buildDecorations(
+        view: EditorView,
+        outputs: HeadersOutput[],
+      ): DecorationSet {
+        const decorations: any[] = [];
+        const doc = view.state.doc;
+        let blockStartLineNumber = 1;
+
+        outputs.forEach((output) => {
+          const protocolLineNumber = blockStartLineNumber;
+          const protocolFrom = doc.line(protocolLineNumber).from;
+          decorations.push(
+            Decoration.mark({
+              class: 'cm-header-protocol',
+            }).range(protocolFrom, protocolFrom + output.protocol.length),
+          );
+
+          const headerEntries = _(output.headers).entries().value();
+          headerEntries.forEach(([key, value], headerIndex) => {
+            const headerLineNumber = blockStartLineNumber + 1 + headerIndex;
+            const lineFrom = doc.line(headerLineNumber).from;
+
+            // Header key - GREEN
+            decorations.push(
+              Decoration.mark({
+                class: 'cm-header-key',
+              }).range(lineFrom, lineFrom + key.length),
+            );
+
+            // Header value - RED
+            const valueFrom = lineFrom + key.length + 2; // ": "
+            decorations.push(
+              Decoration.mark({
+                class: 'cm-header-value',
+              }).range(valueFrom, valueFrom + value.length),
+            );
+          });
+
+          // Advance to next block start line (same logic as the headers scroll effect).
+          blockStartLineNumber += 1; // protocol line
+          blockStartLineNumber += headerEntries.length; // headers lines
+          blockStartLineNumber += HEADER_BLOCK_GAP_LINES; // empty lines between outputs
+        });
+
+        return Decoration.set(decorations);
+      }
+    },
+    {
+      decorations: (v) => v.decorations,
+    },
+  );
+};
+
+const headersTheme = EditorView.theme({
+  '.cm-header-protocol': {
+    color: `#${COLORS[THEME].RED}`,
+  },
+  '.cm-header-key': {
+    color: `#${COLORS[THEME].GREEN}`,
+  },
+  '.cm-header-value': {
+    color: `#${COLORS[THEME].RED}`,
+  },
+});
+
 export function CellResponses({
   activeCellIndex,
   cell,
@@ -170,6 +473,63 @@ export function CellResponses({
     });
 
   const [loadingEclipsis, setLoadingEclipsis] = useState(0);
+
+  const headersWrapperRef = useRef<HTMLDivElement>(null);
+  useWatchForRefReady(headersWrapperRef);
+
+  const { wordWrappingInEditor } = useSelector(
+    (state: RootState) => state.user,
+  );
+
+  const headersText = useMemo(
+    () => formatHeadersAsText(cell.outputs),
+    [cell.outputs],
+  );
+
+  const headersDecorations = useMemo(
+    () => createHeadersDecorations(cell.outputs),
+    [cell.outputs],
+  );
+
+  const headersCodeMirrorRef = useRef<ReactCodeMirrorRef>(null);
+  useWatchForRefChanged(headersCodeMirrorRef);
+  const headersStatisticsRef = useRef<Statistics | null>(null);
+  useWatchForRefReady(headersStatisticsRef);
+
+  const onClickCreateVariable = useMemo(() => {
+    return ({
+      name,
+      value,
+      headerKey,
+    }: {
+      name: string;
+      value: string;
+      headerKey: string;
+    }) => {
+      dispatch(
+        appendToCellPostScript({
+          cellIndex: activeCellIndex,
+          postScript: `var ${name} = headers('${headerKey}')`,
+        }),
+      );
+      dispatch(
+        addVariable({
+          variable: {
+            key: name,
+            value,
+            source: 'response',
+          },
+        }),
+      );
+    };
+  }, [activeCellIndex, dispatch]);
+
+  const headersContextMenu = useHeadersContextMenu({
+    headersStatisticsRef,
+    headersCodeMirrorRef,
+    outputs: cell.outputs,
+    onClickCreateVariable,
+  });
 
   useEffect(() => {
     if (cell?.send_status !== 'sending') {
@@ -196,6 +556,31 @@ export function CellResponses({
       });
     }, 0);
   }, [cell.outputs]);
+
+  // Scroll CodeMirror headers editor to the latest output block
+  useEffect(() => {
+    const codeMirrorView = headersCodeMirrorRef.current?.view;
+    if (!codeMirrorView) return;
+    if (cell.outputs.length === 0) return;
+
+    const lineNumber = getHeaderBlockStartLine(
+      cell.outputs,
+      cell.outputs.length - 1,
+    );
+
+    setTimeout(() => {
+      const doc = codeMirrorView.state.doc;
+      if (lineNumber > doc.lines) return;
+
+      const line = doc.line(lineNumber);
+      // Use CodeMirror's native scrollIntoView
+      codeMirrorView.dispatch({
+        effects: EditorView.scrollIntoView(line.from, {
+          y: 'start',
+        }),
+      });
+    }, 0);
+  }, [headersCodeMirrorRef.current?.view, cell.outputs, headersText]);
 
   if (!cell) {
     return null;
@@ -293,65 +678,44 @@ export function CellResponses({
             {shouldShowHeaders && (
               <>
                 <div
+                  ref={headersWrapperRef}
                   style={{
-                    overflowY: 'scroll',
                     maxHeight: '25%',
                     backgroundColor: `#${COLORS[THEME].WHITE}`,
                     borderRadius: 4,
-                    padding: 10,
+                    overflow: 'hidden',
+                    position: 'relative',
                   }}
+                  {...headersContextMenu.getProps()}
                 >
-                  <code>
-                    {cell.outputs
-                      .flatMap((output, i) => [
-                        <Fragment key={i}>
-                          <div
-                            id={`output-${i}`}
-                            style={{
-                              wordWrap: 'break-word',
-                              whiteSpace: 'pre-wrap',
-                            }}
-                          >
-                            <span style={{ color: `#${COLORS[THEME].RED}` }}>
-                              {output.protocol}
-                            </span>
-                          </div>
-                          {_(output.headers)
-                            .entries()
-                            .map(([k, v]) => {
-                              return (
-                                <div
-                                  key={k}
-                                  style={{
-                                    wordWrap: 'break-word',
-                                    whiteSpace: 'pre-wrap',
-                                  }}
-                                >
-                                  <span
-                                    style={{ color: `#${COLORS[THEME].GREEN}` }}
-                                  >
-                                    {k}
-                                  </span>
-                                  :{' '}
-                                  <span
-                                    style={{ color: `#${COLORS[THEME].RED}` }}
-                                  >
-                                    {v}
-                                  </span>
-                                </div>
-                              );
-                            })
-                            .value()}
-                        </Fragment>,
-                        <div
-                          key={`${i}-divider`}
-                          style={{
-                            height: 40,
-                          }}
-                        />,
-                      ])
-                      .slice(0, -1)}
-                  </code>
+                  {headersContextMenu.menuPortal}
+                  <CodeMirror
+                    ref={headersCodeMirrorRef}
+                    extensions={[
+                      headersTheme,
+                      headersDecorations,
+                      ...(wordWrappingInEditor
+                        ? [EditorView.lineWrapping]
+                        : []),
+                    ]}
+                    readOnly
+                    height={
+                      headersWrapperRef.current?.clientHeight
+                        ? `${headersWrapperRef.current.clientHeight}px`
+                        : '200px'
+                    }
+                    value={headersText}
+                    onContextMenu={async (e) => {
+                      e.preventDefault();
+                      // await for statistics to be updated
+                      await new Promise<void>((resolve) => {
+                        setTimeout(resolve);
+                      });
+                    }}
+                    onStatistics={(statistics) => {
+                      headersStatisticsRef.current = statistics;
+                    }}
+                  />
                 </div>
                 <div
                   style={{

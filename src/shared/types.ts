@@ -110,7 +110,7 @@ export const docSchema = z.object({
   globalVariables: z.array(
     z.object({
       key: z.string(),
-      value: z.any(),
+      value: z.any().optional(),
       source: z.enum(['manual', 'response']),
     }),
   ),

@@ -8,13 +8,14 @@ export function PopMenu({
   children,
   clientX,
   clientY,
+  close,
 }: {
   children: React.ReactNode;
   clientX: number;
   clientY: number;
+  close: () => void;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
-  const [show, setShow] = React.useState(true);
   const [width, setWidth] = React.useState(0);
   const [height, setHeight] = React.useState(0);
 
@@ -29,10 +30,6 @@ export function PopMenu({
     return () => {};
   }, [ref]);
 
-  useEffect(() => {
-    setShow(true);
-  }, [clientX, clientY]);
-
   const left =
     clientX > window.innerWidth - width ? window.innerWidth - width : clientX;
 
@@ -45,17 +42,13 @@ export function PopMenu({
       if (ref.current?.contains(e.target as Node)) {
         return;
       }
-      setShow(false);
+      close();
     };
     document.addEventListener('click', listener);
     return () => {
       document.removeEventListener('click', listener);
     };
-  }, [setShow, ref]);
-
-  if (!show) {
-    return null;
-  }
+  }, [close, ref]);
 
   return (
     <div
@@ -131,7 +124,11 @@ export const useContextMenu = ({
         setTimeout(() => {
           setMenuPortal(
             createPortal(
-              <PopMenu clientX={e.clientX} clientY={e.clientY}>
+              <PopMenu
+                clientX={e.clientX}
+                clientY={e.clientY}
+                close={() => setMenuPortal(null)}
+              >
                 <Menu />
               </PopMenu>,
               document.body,
