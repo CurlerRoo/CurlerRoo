@@ -44,7 +44,7 @@ export function Modal({
       styles={{
         content: {
           width: '100%',
-          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          backgroundColor: `#${colors.SURFACE_PRIMARY}`,
           border: `1px solid #${colors.BORDER}`,
           borderRadius: 10,
           boxShadow:

@@ -84,7 +84,6 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
       styles={{
         content: {
           width: '100%',
-          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
           border: `1px solid #${colors.BORDER}`,
           borderRadius: 8,
           overflow: 'hidden',
@@ -105,7 +104,7 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
           alignItems: 'center',
           gap: 10,
           color: `#${colors.TEXT_PRIMARY}`,
-          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          backgroundColor: `#${colors.SURFACE_PRIMARY}`,
         },
       }}
     >

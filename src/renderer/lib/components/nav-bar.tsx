@@ -23,7 +23,7 @@ import { CurlCellType, Variable } from '../../../shared/types';
 import { modal } from './modal';
 import { getDocOnDiskFromDoc } from '../../../shared/get-doc-on-disk-from-doc';
 import { ENDPOINT0, WEB_APP_URL } from '../../../shared/constants/constants';
-import { useColors } from '../contexts/theme-context';
+import { useColors, useTheme } from '../contexts/theme-context';
 import { PLATFORM } from '@constants';
 import { SetURLSearchParams, useSearchParams } from 'react-router-dom';
 import { setSelectedSubDirectoryOrFile } from '../../state/features/selected-directory/selected-directory';
@@ -123,9 +123,11 @@ function SearchAll({ close }: { close: () => void }) {
           height: 30,
           width: '100%',
           borderRadius: 5,
-          border: `1px solid #${colors.TEXT_TERTIARY}`,
+          border: `1px solid #${colors.BORDER}`,
           outline: 'none',
           textIndent: 10,
+          backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+          color: `#${colors.TEXT_PRIMARY}`,
         }}
         type="text"
         value={search}
@@ -152,6 +154,7 @@ function SearchAll({ close }: { close: () => void }) {
         )}
         {results.map((m) => (
           <div
+            key={`${m.filePath}-${m.cellIndex}`}
             style={{
               cursor: 'pointer',
             }}
@@ -175,15 +178,20 @@ function SearchAll({ close }: { close: () => void }) {
               {m.filePath}
             </div>
             <HoverHighlight style={{ padding: 5, marginLeft: 20 }}>
-              ...{m.previewText[0]}
+              <span style={{ color: `#${colors.TEXT_SECONDARY}` }}>
+                ...{m.previewText[0]}
+              </span>
               <span
                 style={{
-                  backgroundColor: `#${colors.WARNING}`,
+                  backgroundColor: `#${colors.SELECTION}`,
+                  color: `#${colors.TEXT_PRIMARY}`,
                 }}
               >
                 {m.previewText[1]}
               </span>
-              {m.previewText[2]}...
+              <span style={{ color: `#${colors.TEXT_SECONDARY}` }}>
+                {m.previewText[2]}...
+              </span>
             </HoverHighlight>
           </div>
         ))}
@@ -201,6 +209,7 @@ const OpenShareLinkModalBody = ({
   setSearchParams: SetURLSearchParams;
   onClose: () => void;
 }) => {
+  const colors = useColors();
   const [url, setUrl] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -234,7 +243,7 @@ const OpenShareLinkModalBody = ({
 
   return (
     <div>
-      <p>URL:</p>
+      <p style={{ color: `#${colors.TEXT_PRIMARY}` }}>URL:</p>
       <div>
         <input
           ref={inputRef}
@@ -242,15 +251,22 @@ const OpenShareLinkModalBody = ({
             width: 'calc(100% - 22px)',
             padding: 10,
             fontSize: '16px',
-            border: '1px solid #ccc',
+            border: `1px solid #${errorMessage ? colors.ERROR : colors.BORDER}`,
             borderRadius: '5px',
+            backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+            color: `#${colors.TEXT_PRIMARY}`,
+            outline: 'none',
           }}
           placeholder="Paste the shared link here"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
       </div>
-      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+      {errorMessage && (
+        <p style={{ color: `#${colors.ERROR}`, marginTop: 10 }}>
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 };
@@ -274,6 +290,7 @@ export function NavBar({
   executingAllCells: boolean;
   selectedDirectory: string;
 }) {
+  const colors = useColors();
   const [_searchParams, setSearchParams] = useSearchParams();
   const dispatch: AppDispatch = useDispatch();
   const activeDocument = useSelector(
@@ -300,14 +317,22 @@ export function NavBar({
           duration: 10,
           style: {
             width: 400,
-            background: 'red',
-            color: 'white',
+            background: `#${colors.ERROR}`,
+            color: `#${colors.SURFACE_BRIGHT}`,
             fontWeight: 'bold',
           },
         });
       });
     });
-  }, [id, shared_id, cells, filePath, globalVariables, executingAllCells]);
+  }, [
+    id,
+    shared_id,
+    cells,
+    filePath,
+    globalVariables,
+    executingAllCells,
+    colors,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -327,7 +352,9 @@ export function NavBar({
       return;
     }
     const { close: closeWaitModal } = modal({
-      content: <div>Uploading...</div>,
+      content: (
+        <div style={{ color: `#${colors.TEXT_PRIMARY}` }}>Uploading...</div>
+      ),
     });
 
     const docOnDisk = getDocOnDiskFromDoc({
@@ -348,21 +375,28 @@ export function NavBar({
     const { close } = modal({
       content: (
         <div>
-          <p>URL:</p>
+          <p style={{ color: `#${colors.TEXT_PRIMARY}` }}>URL:</p>
           <div>
             <input
               style={{
                 width: 'calc(100% - 22px)',
                 padding: 10,
                 fontSize: '16px',
-                border: '1px solid #ccc',
+                border: `1px solid #${colors.BORDER}`,
                 borderRadius: '5px',
+                backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+                color: `#${colors.TEXT_PRIMARY}`,
               }}
               value={url}
               readOnly
             />
           </div>
-          <p style={{ lineHeight: '1.5rem' }}>
+          <p
+            style={{
+              lineHeight: '1.5rem',
+              color: `#${colors.TEXT_PRIMARY}`,
+            }}
+          >
             Note: For privacy reason, the shared document will be{' '}
             <b>deleted on cloud after 48 hours</b> from the last access. The
             local imported document will not be deleted.
@@ -393,7 +427,12 @@ export function NavBar({
     const { close } = modal({
       content: (
         <div>
-          <p style={{ textAlign: 'center' }}>
+          <p
+            style={{
+              textAlign: 'center',
+              color: `#${colors.TEXT_PRIMARY}`,
+            }}
+          >
             You are about to upload the document to the cloud and create a share
             link. Are you sure?
           </p>
