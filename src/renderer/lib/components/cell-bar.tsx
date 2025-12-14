@@ -19,6 +19,7 @@ import { TextButton } from './text-button';
 import { CurlCellType } from '../../../shared/types';
 import styled from 'styled-components';
 import { useState } from 'react';
+import { useColors } from '../contexts/theme-context';
 
 const textButtonStyle = {};
 const CellName = styled.span`
@@ -41,6 +42,7 @@ export function CellBar({
   cell: CurlCellType;
   selectedDirectory: string;
 }) {
+  const colors = useColors();
   const dispatch: AppDispatch = useDispatch();
   const [isFocused, setIsFocused] = useState(false);
 
@@ -59,7 +61,9 @@ export function CellBar({
           setIsFocused(true);
         }}
         style={{
-          backgroundColor: isFocused ? 'white' : 'transparent',
+          backgroundColor: isFocused
+            ? `#${colors.SURFACE_SECONDARY}`
+            : 'transparent',
         }}
         onBlur={(e) => {
           const trimmed = e.target.innerText?.trim();

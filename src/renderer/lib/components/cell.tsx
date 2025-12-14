@@ -39,7 +39,8 @@ import {
   removeDragToCells,
 } from '../../state/features/drag/drag';
 import { getCurlParts } from '../../../shared/get-curl-parts';
-import { COLORS, THEME } from '@constants';
+import { useColors, useTheme } from '../contexts/theme-context';
+import { COLORS } from '@constants';
 import { modal } from './modal';
 import { PostScriptsTutorial } from './post-scripts-tutorial';
 import { ShowVariablesTutorialLevel2 } from './variables-tutorial';
@@ -50,6 +51,52 @@ import { getCurlWithValue } from '../../../shared/get-curl-with-value';
 
 let curlCellBeforeMountInitialized = false;
 let scriptCellBeforeMountInitialized = false;
+
+// Shared helper functions for Monaco editor themes
+type ThemeColors = (typeof COLORS)['LIGHT_MODE'];
+
+function getMonacoEditorColors(colors: ThemeColors) {
+  return {
+    'editor.background': `#${colors.SURFACE_PRIMARY}`,
+    'editor.foreground': `#${colors.TEXT_PRIMARY}`,
+    'editorCursor.foreground': `#${colors.TEXT_PRIMARY}`,
+    'editorLineNumber.foreground': `#${colors.TEXT_TERTIARY}`,
+    'editorLineNumber.dimmedForeground': `#${colors.TEXT_TERTIARY}`,
+    'editorLineNumber.activeForeground': `#${colors.TEXT_SECONDARY}`,
+    'editor.selectionBackground': `#${colors.SELECTION}`,
+    'editor.inactiveSelectionBackground': `#${colors.BORDER}`,
+    'editor.lineHighlightBackground': `#${colors.SURFACE_PRIMARY}`,
+    'editorIndentGuide.background': `#${colors.BORDER}`,
+    'editorIndentGuide.activeBackground': `#${colors.SELECTION}`,
+    'editorWidget.background': `#${colors.SURFACE_SECONDARY}`,
+    'editorWidget.border': `#${colors.BORDER}`,
+  };
+}
+
+function getMonacoCurlRules(colors: ThemeColors) {
+  return [
+    {
+      token: 'keyword',
+      foreground: colors.PRIMARY,
+    },
+    {
+      token: 'number',
+      foreground: colors.SYNTAX_STRING,
+    },
+    {
+      token: 'variable',
+      foreground: colors.PRIMARY,
+    },
+    {
+      token: 'string',
+      foreground: colors.SYNTAX_STRING,
+    },
+    {
+      token: 'comment',
+      foreground: colors.SUCCESS,
+    },
+  ];
+}
 
 const Script = ({
   scriptText,
@@ -64,6 +111,8 @@ const Script = ({
   type: 'before' | 'after';
   selectedDirectory: string;
 }) => {
+  const colors = useColors();
+  const { theme } = useTheme();
   const dispatch: AppDispatch = useDispatch();
   const [isMounted, setIsMounted] = useState(false);
   const { wordWrappingInEditor } = useSelector(
@@ -86,6 +135,21 @@ const Script = ({
     });
   }, [dispatch, cellIndex, isMounted]);
 
+  // Update Monaco theme when theme/colors change
+  useEffect(() => {
+    if (!monacoRef.current || !editorRef.current) {
+      return;
+    }
+    const _monaco = monacoRef.current;
+    _monaco.editor.defineTheme('script', {
+      base: theme === 'DARK_MODE' ? 'vs-dark' : 'vs',
+      inherit: true,
+      rules: [],
+      colors: getMonacoEditorColors(colors),
+    });
+    _monaco.editor.setTheme('script');
+  }, [theme, colors]);
+
   const errorMessage =
     type === 'before' ? cell.pre_scripts_error : cell.post_scripts_error;
   const scriptStatus =
@@ -100,7 +164,7 @@ const Script = ({
           height: 19,
           fontWeight: 'bold',
           fontSize: 13,
-          color: `#${COLORS[THEME].BLACK_EAL}`,
+          color: `#${colors.TEXT_PRIMARY}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -179,7 +243,7 @@ const Script = ({
             >
               <span
                 style={{
-                  color: `#${COLORS[THEME].RED}`,
+                  color: `#${colors.ERROR}`,
                   fontWeight: 'normal',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -192,7 +256,7 @@ const Script = ({
               <span
                 style={{
                   fontWeight: 'normal',
-                  backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+                  backgroundColor: `#${colors.SURFACE_PRIMARY}`,
                   padding: 2,
                   cursor: 'pointer',
                 }}
@@ -210,7 +274,7 @@ const Script = ({
             display: 'flex',
             alignItems: 'center',
             gap: 2,
-            color: `#${COLORS[THEME].GREY}`,
+            color: `#${colors.TEXT_SECONDARY}`,
             cursor: 'pointer',
             fontWeight: 'normal',
           }}
@@ -274,7 +338,25 @@ declare function json_body(path: string): any;
 `,
             'global.d.ts',
           );
+
+          // Define the theme *before* the editor first paints (prevents white flash in dark mode).
+          _monaco.editor.defineTheme('script', {
+            base: theme === 'DARK_MODE' ? 'vs-dark' : 'vs',
+            inherit: true,
+            rules: [],
+            colors: getMonacoEditorColors(colors),
+          });
         }}
+        theme="script"
+        loading={
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+            }}
+          />
+        }
         value={scriptText}
         language="javascript"
         onChange={(e) => {
@@ -360,6 +442,8 @@ export function Cell({
   selectedDirectory: string;
   id: string;
 }) {
+  const colors = useColors();
+  const { theme } = useTheme();
   const dispatch: AppDispatch = useDispatch();
   const curlText = cell.source.join('\n');
   const preScriptText = cell.pre_scripts.join('\n');
@@ -384,6 +468,21 @@ export function Cell({
       setCurlEditorHeight(height);
     });
   }, [dispatch, cellIndex, isMounted]);
+
+  // Update Monaco theme when theme/colors change
+  useEffect(() => {
+    if (!curlMonacoRef.current || !curlEditorRef.current) {
+      return;
+    }
+    const _monaco = curlMonacoRef.current;
+    _monaco.editor.defineTheme('curl', {
+      base: theme === 'DARK_MODE' ? 'vs-dark' : 'vs',
+      inherit: true,
+      rules: getMonacoCurlRules(colors),
+      colors: getMonacoEditorColors(colors),
+    });
+    _monaco.editor.setTheme('curl');
+  }, [theme, colors]);
 
   const forceRefocusActiveCell = useSelector(
     (state: RootState) => state.activeDocument?.forceRefocusActiveCell,
@@ -531,14 +630,14 @@ export function Cell({
             borderBottomRightRadius: 4,
             padding: '3px 0',
             margin: cellIndex === activeCellIndex ? '0' : '2px', // because of border
-            backgroundColor: 'white',
+            backgroundColor: `#${colors.SURFACE_PRIMARY}`,
             border:
               cellIndex === activeCellIndex
-                ? `2px solid #${COLORS[THEME].GREY}`
+                ? `2px solid #${colors.TEXT_SECONDARY}`
                 : 'none',
             boxShadow:
               cellIndex === activeCellIndex
-                ? `0 0 4px #${COLORS[THEME].GREY}`
+                ? `0 0 4px #${colors.TEXT_SECONDARY}`
                 : 'none',
           }}
           onDragEnter={(e) => {
@@ -567,7 +666,7 @@ export function Cell({
                 style={{
                   height: 1,
                   width: '100%',
-                  backgroundColor: `#${COLORS[THEME].PASTEL_GREY}`,
+                  backgroundColor: `#${colors.DISABLED}`,
                 }}
               />
             </>
@@ -577,7 +676,7 @@ export function Cell({
               height: 19,
               fontWeight: 'bold',
               fontSize: 13,
-              color: `#${COLORS[THEME].BLACK_EAL}`,
+              color: `#${colors.TEXT_PRIMARY}`,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -643,7 +742,7 @@ export function Cell({
                               duration: 2,
                               style: {
                                 width: 400,
-                                background: `#${COLORS[THEME].RED}`,
+                                background: `#${colors.ERROR}`,
                                 color: 'white',
                                 fontWeight: 'bold',
                               },
@@ -669,7 +768,7 @@ export function Cell({
                       duration: 2,
                       style: {
                         width: 400,
-                        background: `#${COLORS[THEME].GREEN}`,
+                        background: `#${colors.SUCCESS}`,
                         color: 'white',
                         fontWeight: 'bold',
                       },
@@ -713,7 +812,7 @@ export function Cell({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 2,
-                  color: `#${COLORS[THEME].GREY}`,
+                  color: `#${colors.TEXT_SECONDARY}`,
                   cursor: 'pointer',
                   fontWeight: 'normal',
                 }}
@@ -1002,7 +1101,7 @@ export function Cell({
                         duration: 10,
                         style: {
                           width: 400,
-                          background: `#${COLORS[THEME].RED}`,
+                          background: `#${colors.ERROR}`,
                           color: 'white',
                           fontWeight: 'bold',
                         },
@@ -1017,7 +1116,25 @@ export function Cell({
                 'curl',
                 new CurlCompletionItemProvider(),
               );
+
+              // Define the theme *before* the editor first paints (prevents white flash in dark mode).
+              _monaco.editor.defineTheme('curl', {
+                base: theme === 'DARK_MODE' ? 'vs-dark' : 'vs',
+                inherit: true,
+                rules: getMonacoCurlRules(colors),
+                colors: getMonacoEditorColors(colors),
+              });
             }}
+            theme="curl"
+            loading={
+              <div
+                style={{
+                  height: '100%',
+                  width: '100%',
+                  backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+                }}
+              />
+            }
             options={{
               lineHeight: 20,
               minimap: {
@@ -1052,40 +1169,9 @@ export function Cell({
             height={curlEditorHeight}
             language="curl"
             onMount={(_editor, _monaco) => {
-              _monaco.editor.defineTheme('curl', {
-                base: 'vs',
-                inherit: true,
-                rules: [
-                  {
-                    token: 'keyword',
-                    foreground: COLORS[THEME].BLUE,
-                  },
-                  {
-                    token: 'number',
-                    foreground: COLORS[THEME].RED,
-                  },
-                  {
-                    token: 'variable',
-                    foreground: COLORS[THEME].BLUE,
-                  },
-                  {
-                    token: 'string',
-                    foreground: COLORS[THEME].RED,
-                  },
-                  {
-                    token: 'comment',
-                    foreground: COLORS[THEME].GREEN,
-                  },
-                ],
-                colors: {
-                  'editorLineNumber.foreground': `#${COLORS[THEME].GREY1}`,
-                  'editorLineNumber.dimmedForeground': `#${COLORS[THEME].GREY1}`,
-                  'editorLineNumber.activeForeground': `#${COLORS[THEME].GREY1}`,
-                },
-              });
+              _monaco.editor.setTheme('curl');
               _editor.updateOptions({
                 tabSize: 2,
-                theme: 'curl',
               });
               _editor.addAction({
                 id: `curl-run-${cellIndex}`,
@@ -1150,7 +1236,7 @@ export function Cell({
                 display: 'flex',
                 justifyContent: 'end',
                 gap: 2,
-                color: `#${COLORS[THEME].GREY}`,
+                color: `#${colors.TEXT_SECONDARY}`,
                 cursor: 'pointer',
                 padding: '0 10px',
               }}
@@ -1183,7 +1269,7 @@ export function Cell({
                 style={{
                   height: 1,
                   width: '100%',
-                  backgroundColor: `#${COLORS[THEME].PASTEL_GREY}`,
+                  backgroundColor: `#${colors.DISABLED}`,
                 }}
               />
               <Script

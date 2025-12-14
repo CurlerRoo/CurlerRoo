@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   VscAdd,
   VscCloudDownload,
@@ -22,26 +22,42 @@ import { TextButton } from './text-button';
 import { CurlCellType, Variable } from '../../../shared/types';
 import { modal } from './modal';
 import { getDocOnDiskFromDoc } from '../../../shared/get-doc-on-disk-from-doc';
-import {
-  COLORS,
-  ENDPOINT0,
-  THEME,
-  WEB_APP_URL,
-} from '../../../shared/constants/constants';
+import { ENDPOINT0, WEB_APP_URL } from '../../../shared/constants/constants';
+import { useColors } from '../contexts/theme-context';
 import { PLATFORM } from '@constants';
 import { SetURLSearchParams, useSearchParams } from 'react-router-dom';
-import styled from 'styled-components';
 import { setSelectedSubDirectoryOrFile } from '../../state/features/selected-directory/selected-directory';
 import { useDebounce } from 'react-use';
 import { searchAll } from '../../services/search-all';
 
-const HoverHighlight = styled.div`
-  &:hover {
-    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
-  }
-`;
+const HoverHighlight = ({
+  children,
+  onClick,
+  style,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  style?: React.CSSProperties;
+}) => {
+  const colors = useColors();
+  return (
+    <div
+      onClick={onClick}
+      style={style}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `#${colors.SURFACE_SECONDARY}`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 function SearchAll({ close }: { close: () => void }) {
+  const colors = useColors();
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<
     {
@@ -107,7 +123,7 @@ function SearchAll({ close }: { close: () => void }) {
           height: 30,
           width: '100%',
           borderRadius: 5,
-          border: `1px solid #${COLORS[THEME].GREY1}`,
+          border: `1px solid #${colors.TEXT_TERTIARY}`,
           outline: 'none',
           textIndent: 10,
         }}
@@ -128,7 +144,7 @@ function SearchAll({ close }: { close: () => void }) {
             style={{
               padding: 10,
               textAlign: 'center',
-              color: `#${COLORS[THEME].GREY}`,
+              color: `#${colors.TEXT_SECONDARY}`,
             }}
           >
             No results
@@ -153,7 +169,7 @@ function SearchAll({ close }: { close: () => void }) {
             <div
               style={{
                 padding: 5,
-                color: `#${COLORS[THEME].BLUE}`,
+                color: `#${colors.PRIMARY}`,
               }}
             >
               {m.filePath}
@@ -162,7 +178,7 @@ function SearchAll({ close }: { close: () => void }) {
               ...{m.previewText[0]}
               <span
                 style={{
-                  backgroundColor: `#${COLORS[THEME].YELLOW}`,
+                  backgroundColor: `#${colors.WARNING}`,
                 }}
               >
                 {m.previewText[1]}

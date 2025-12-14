@@ -1,15 +1,8 @@
 import { ButtonHTMLAttributes } from 'react';
 import { IconBaseProps, IconType } from 'react-icons';
-import styled from 'styled-components';
 import Tooltip from 'rc-tooltip';
 import 'rc-tooltip/assets/bootstrap.css';
-import { COLORS, THEME } from '@constants';
-
-const HoverHighlight = styled.div`
-  &:hover {
-    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
-  }
-`;
+import { useColors } from '../contexts/theme-context';
 
 export function TextButton({
   icon,
@@ -22,6 +15,7 @@ export function TextButton({
   iconProps?: IconBaseProps;
   tooltip?: string;
 }) {
+  const colors = useColors();
   const Icon = icon;
   return (
     <Tooltip
@@ -35,7 +29,7 @@ export function TextButton({
       placement="bottom"
       trigger="hover"
     >
-      <HoverHighlight
+      <div
         {...props}
         style={{
           padding: '2px 5px',
@@ -47,12 +41,25 @@ export function TextButton({
           whiteSpace: 'nowrap',
           ...props.style,
         }}
+        onMouseEnter={(e) => {
+          if (props.onMouseEnter) {
+            props.onMouseEnter(e);
+          }
+          e.currentTarget.style.backgroundColor = `#${colors.SURFACE_SECONDARY}`;
+        }}
+        onMouseLeave={(e) => {
+          if (props.onMouseLeave) {
+            props.onMouseLeave(e);
+          }
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
       >
         {Icon && (
           <Icon
             {...iconProps}
             style={{
               cursor: 'pointer',
+              color: `#${colors.TEXT_PRIMARY}`,
               ...iconProps?.style,
             }}
           />
@@ -61,7 +68,7 @@ export function TextButton({
           <button
             style={{
               border: 'none',
-              color: `#${COLORS[THEME].BLACK_EAL}`,
+              color: `#${colors.TEXT_PRIMARY}`,
               cursor: 'pointer',
               backgroundColor: 'transparent',
             }}
@@ -69,7 +76,7 @@ export function TextButton({
             {children}
           </button>
         ) : null}
-      </HoverHighlight>
+      </div>
     </Tooltip>
   );
 }

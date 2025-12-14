@@ -1,9 +1,15 @@
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  MutableRefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
 import { prompt } from '../input-prompt';
-import { COLORS, THEME } from '@constants';
+import { useColors } from '../../contexts/theme-context';
 import { useContextMenu } from '../context-menu';
 import {
   addVariable,
@@ -21,18 +27,42 @@ import CodeMirror, {
   ReactCodeMirrorRef,
   Statistics,
 } from '@uiw/react-codemirror';
+import { useCodeMirrorTheme } from './codemirror-theme';
 import { javascript } from '@codemirror/lang-javascript';
 import { useWatchForRefReady } from '../../hooks/use-watch-for-ref-ready';
 import { search, openSearchPanel } from '@codemirror/search';
 import { useUpdateEffect } from 'react-use';
 
-const MenuItemHoverHighlight = styled.div`
-  &:hover {
-    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
-  }
-  padding: 8px;
-  cursor: pointer;
-`;
+const MenuItemHoverHighlight = ({
+  children,
+  onClick,
+  style,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  style?: React.CSSProperties;
+}) => {
+  const colors = useColors();
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: 8,
+        cursor: 'pointer',
+        color: `#${colors.TEXT_PRIMARY}`,
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `#${colors.SURFACE_SECONDARY}`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 const validateVariableName = async (value: string | null) => {
   // user cancelled
@@ -65,6 +95,7 @@ export function JsonTreeResponse({
 }) {
   const dispatch = useDispatch();
   const joined = useMemo(() => response.body.join('\n'), [response.body]);
+  const colors = useColors();
 
   useEffect(() => {
     try {
@@ -142,7 +173,7 @@ export function JsonTreeResponse({
         return null;
       }
       return (
-        <div>
+        <div style={{ minWidth: 200 }}>
           <MenuItemHoverHighlight
             onClick={async () => {
               const [name] = await prompt([
@@ -159,10 +190,13 @@ export function JsonTreeResponse({
               contextMenu.close();
             }}
           >
-            Create variable from:{' '}
+            <span style={{ color: `#${colors.TEXT_PRIMARY}` }}>
+              Create variable from:{' '}
+            </span>
             <code
               style={{
-                backgroundColor: `#${COLORS[THEME].GREY3}`,
+                backgroundColor: `#${colors.SELECTION}`,
+                color: `#${colors.TEXT_PRIMARY}`,
               }}
             >
               {token.path.length > 40
@@ -174,7 +208,7 @@ export function JsonTreeResponse({
             style={{
               height: 1,
               width: '100%',
-              backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+              backgroundColor: `#${colors.BORDER}`,
             }}
           />
           <MenuItemHoverHighlight
@@ -187,10 +221,11 @@ export function JsonTreeResponse({
               contextMenu.close();
             }}
           >
-            Copy:{' '}
+            <span style={{ color: `#${colors.TEXT_PRIMARY}` }}>Copy: </span>
             <code
               style={{
-                backgroundColor: `#${COLORS[THEME].GREY3}`,
+                backgroundColor: `#${colors.SELECTION}`,
+                color: `#${colors.TEXT_PRIMARY}`,
               }}
             >
               {token.value.length > 40
@@ -226,6 +261,8 @@ export function JsonTreeResponse({
     (state: RootState) => state.user,
   );
 
+  const codeMirrorTheme = useCodeMirrorTheme();
+
   return (
     <div
       ref={wrapperRef}
@@ -233,6 +270,8 @@ export function JsonTreeResponse({
         height: 'calc(100% - 10px)',
         width: '100%',
         position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 8,
       }}
       {...contextMenu.getProps()}
     >
@@ -241,6 +280,7 @@ export function JsonTreeResponse({
         ref={codeMirrorRef}
         readOnly
         extensions={[
+          codeMirrorTheme,
           javascript(),
           search({
             top: true,

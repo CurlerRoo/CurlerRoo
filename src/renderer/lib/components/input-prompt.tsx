@@ -3,7 +3,7 @@ import 'rc-dialog/assets/index.css';
 import { createRoot } from 'react-dom/client';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { TextButton } from './text-button';
-import { COLORS, THEME } from '@constants';
+import { useColors } from '../contexts/theme-context';
 
 export type InputPromptProps = {
   params: {
@@ -16,6 +16,7 @@ export type InputPromptProps = {
 };
 
 export function InputPrompt({ params, onClose }: InputPromptProps) {
+  const colors = useColors();
   const [visible, setVisible] = useState(true);
   const disableClickRef = useRef(false);
   const [errorMessages, setErrorMessages] = useState([] as string[]);
@@ -107,7 +108,7 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
                   outline: 'none',
                   height: 20,
                   borderRadius: 4,
-                  border: `1px solid #${error ? COLORS[THEME].RED : COLORS[THEME].GREY}`,
+                  border: `1px solid #${error ? colors.ERROR : colors.TEXT_SECONDARY}`,
                 }}
                 ref={i === 0 ? inputRef : undefined}
                 value={values[i] || ''}
@@ -134,7 +135,7 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
                   height: 100,
                   width: 200,
                   borderRadius: 4,
-                  border: `1px solid #${error ? COLORS[THEME].RED : COLORS[THEME].GREY}`,
+                  border: `1px solid #${error ? colors.ERROR : colors.TEXT_SECONDARY}`,
                 }}
                 value={values[i] || ''}
                 onChange={(e) =>
@@ -153,7 +154,7 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
               />
             )}
             {error && (
-              <div style={{ color: `#${COLORS[THEME].RED}`, marginBottom: 10 }}>
+              <div style={{ color: `#${colors.ERROR}`, marginBottom: 10 }}>
                 {error}
               </div>
             )}

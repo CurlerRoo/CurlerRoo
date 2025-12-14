@@ -7,7 +7,7 @@ import {
   forceRefocusActiveCell,
   updateCell,
 } from '../../state/features/documents/active-document';
-import { COLORS, THEME } from '@constants';
+import { useColors } from '../contexts/theme-context';
 import { RootState } from '../../state/store';
 import { insertVariableToCurl } from '../../../shared/insert-variable-to-curl';
 import { useEffect, useMemo, useState } from 'react';
@@ -22,6 +22,7 @@ export function ColorfulButton({
   name: string;
   value?: unknown;
 }) {
+  const colors = useColors();
   const dispatch = useDispatch();
   const cellIndex = useSelector(
     (state: RootState) => state.activeDocument?.activeCellIndex,
@@ -67,8 +68,8 @@ export function ColorfulButton({
           >
             <div
               style={{
-                backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
-                color: `#${COLORS[THEME].BLACK_EAL}`,
+                backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+                color: `#${colors.TEXT_PRIMARY}`,
                 padding: '0 5px',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -120,8 +121,8 @@ export function ColorfulButton({
             </div>
             <div
               style={{
-                backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
-                color: `#${COLORS[THEME].BLACK_EAL}`,
+                backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+                color: `#${colors.TEXT_PRIMARY}`,
                 padding: '0 5px',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -137,7 +138,7 @@ export function ColorfulButton({
           <div style={{ height: 5 }} />
           <div
             style={{
-              backgroundColor: `#${COLORS[THEME].GREY0}`,
+              backgroundColor: `#${colors.SELECTION}`,
               padding: 5,
               borderRadius: 4,
             }}
@@ -161,10 +162,10 @@ export function ColorfulButton({
       <div style={{ position: 'relative' }}>
         <button
           style={{
-            color: `#${COLORS[THEME].BLUE}`,
-            backgroundColor: 'white',
+            color: `#${colors.PRIMARY}`,
+            backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+            border: `1px solid #${colors.BORDER}`,
             borderRadius: 4,
-            border: 'none',
             cursor: 'pointer',
           }}
           onClick={() => {
@@ -196,7 +197,7 @@ export function ColorfulButton({
                   duration: 10,
                   style: {
                     width: 400,
-                    background: `#${COLORS[THEME].RED}`,
+                    background: `#${colors.ERROR}`,
                     color: 'white',
                     fontWeight: 'bold',
                   },

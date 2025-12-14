@@ -12,10 +12,10 @@ import {
 import {
   APP_VERSION,
   COLORS,
-  THEME,
   ENABLE_TELEMETRY_FEATURE,
   ENABLE_UPDATE_FEATURE,
 } from '@constants';
+import { useTheme, useColors } from '../contexts/theme-context';
 import { TextButton } from './text-button';
 import {
   checkForUpdates,
@@ -151,6 +151,8 @@ export function UpdateAvailableModalContent({
 
 export function SettingsModalContent() {
   const dispatch: AppDispatch = useDispatch();
+  const { preference, setPreference } = useTheme();
+  const colors = useColors();
   const { allowedAnalytics, wordWrappingInEditor } = useSelector(
     (state: RootState) => state.user,
   );
@@ -183,6 +185,7 @@ export function SettingsModalContent() {
         flexDirection: 'column',
         alignItems: 'flex-start',
         gap: 20,
+        color: `#${colors.TEXT_PRIMARY}`,
       }}
     >
       {ENABLE_UPDATE_FEATURE && (
@@ -203,7 +206,7 @@ export function SettingsModalContent() {
                   style={{
                     border: 'none',
                     background: 'none',
-                    color: `#${COLORS[THEME].MID_BLUE}`,
+                    color: `#${colors.LINK}`,
                     cursor: 'pointer',
                     padding: 0,
                     margin: 0,
@@ -279,7 +282,7 @@ export function SettingsModalContent() {
                   style={{
                     border: 'none',
                     background: 'none',
-                    color: `#${COLORS[THEME].MID_BLUE}`,
+                    color: `#${colors.LINK}`,
                     cursor: 'pointer',
                     padding: 0,
                     margin: 0,
@@ -326,7 +329,7 @@ export function SettingsModalContent() {
                 style={{
                   border: 'none',
                   background: 'none',
-                  color: `#${COLORS[THEME].MID_BLUE}`,
+                  color: `#${colors.LINK}`,
                   cursor: 'pointer',
                   padding: 0,
                   margin: 0,
@@ -343,6 +346,84 @@ export function SettingsModalContent() {
           </div>
         </>
       )}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        <div style={{ fontWeight: 'bold' }}>Theme</div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            marginLeft: 10,
+          }}
+        >
+          <label
+            htmlFor="theme-light"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="theme-light"
+              type="radio"
+              name="theme"
+              value="LIGHT_MODE"
+              checked={preference === 'LIGHT_MODE'}
+              onChange={() => setPreference('LIGHT_MODE')}
+              style={{ cursor: 'pointer' }}
+            />
+            <span>Light</span>
+          </label>
+          <label
+            htmlFor="theme-dark"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="theme-dark"
+              type="radio"
+              name="theme"
+              value="DARK_MODE"
+              checked={preference === 'DARK_MODE'}
+              onChange={() => setPreference('DARK_MODE')}
+              style={{ cursor: 'pointer' }}
+            />
+            <span>Dark</span>
+          </label>
+          <label
+            htmlFor="theme-auto"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="theme-auto"
+              type="radio"
+              name="theme"
+              value="AUTO"
+              checked={preference === 'AUTO'}
+              onChange={() => setPreference('AUTO')}
+              style={{ cursor: 'pointer' }}
+            />
+            <span>Auto (follow system)</span>
+          </label>
+        </div>
+      </div>
       <div
         style={{
           display: 'flex',

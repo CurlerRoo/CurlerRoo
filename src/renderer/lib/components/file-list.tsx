@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Notification from 'rc-notification';
 import 'rc-notification/assets/index.css';
 import _ from 'lodash';
@@ -19,12 +19,11 @@ import { TbWorld } from 'react-icons/tb';
 import { v4 } from 'uuid';
 import { Services } from '@services';
 import {
-  COLORS,
-  THEME,
   CURLERROO_FILE_EXTENSION,
   PLATFORM,
   USE_IN_MEMORY_FILE_SYSTEM,
 } from '@constants';
+import { useColors, useTheme } from '../contexts/theme-context';
 import { AppDispatch, RootState } from '../../state/store';
 import {
   createDirectory,
@@ -56,19 +55,71 @@ import { useContextMenu } from './context-menu';
 import { GetDirectoryInfoFunction } from '../../../shared/file-interface';
 import { getDocFromDocOnDisk } from '../../../shared/get-doc-from-doc-on-disk';
 
-const HoverHighlight = styled.div`
-  &:hover {
-    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
-  }
-`;
+const HoverHighlight = ({
+  children,
+  onClick,
+  style,
+  draggable,
+  onDragStart,
+  onDragEnd,
+}: {
+  children: React.ReactNode;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  style?: React.CSSProperties;
+  draggable?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+}) => {
+  const colors = useColors();
+  return (
+    <div
+      onClick={onClick}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      style={style}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `#${colors.SURFACE_SECONDARY}`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
-const MenuItemHoverHighlight = styled.div`
-  &:hover {
-    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
-  }
-  padding: 8px;
-  cursor: pointer;
-`;
+const MenuItemHoverHighlight = ({
+  children,
+  onClick,
+  style,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  style?: React.CSSProperties;
+}) => {
+  const colors = useColors();
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: 8,
+        cursor: 'pointer',
+        color: `#${colors.TEXT_PRIMARY}`,
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `#${colors.SURFACE_SECONDARY}`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 export function DirTree({
   dirTree,
@@ -84,6 +135,8 @@ export function DirTree({
   activeDocument: ActiveDocumentState;
 }) {
   const dispatch: AppDispatch = useDispatch();
+  const colors = useColors();
+  const { theme } = useTheme();
   const { selectedSubDirectoryOrFile } = useSelector(
     (state: RootState) => state.selectedDirectory,
   );
@@ -161,7 +214,7 @@ export function DirTree({
                   style={{
                     height: 1,
                     width: '100%',
-                    backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+                    backgroundColor: `#${colors.BORDER}`,
                   }}
                 />
               </>
@@ -233,7 +286,7 @@ export function DirTree({
               style={{
                 height: 1,
                 width: '100%',
-                backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+                backgroundColor: `#${colors.BORDER}`,
               }}
             />
             <MenuItemHoverHighlight
@@ -250,7 +303,7 @@ export function DirTree({
               style={{
                 height: 1,
                 width: '100%',
-                backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+                backgroundColor: `#${colors.BORDER}`,
               }}
             />
             {PLATFORM === 'electron' ? (
@@ -267,7 +320,7 @@ export function DirTree({
                   style={{
                     height: 1,
                     width: '100%',
-                    backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+                    backgroundColor: `#${colors.BORDER}`,
                   }}
                 />
               </>
@@ -315,7 +368,9 @@ export function DirTree({
         backgroundColor:
           extendedDragToDirectory === dirTree.path &&
           dragFromParentDirectory !== extendedDragToDirectory
-            ? 'lightblue'
+            ? theme === 'DARK_MODE'
+              ? 'rgba(31, 111, 235, 0.25)'
+              : 'lightblue'
             : undefined,
         // if we're at the root level, we want to add some padding to the bottom
         // so that we can drag files into the root directory
@@ -370,7 +425,7 @@ export function DirTree({
     >
       {contextMenu.menuPortal}
       <HoverHighlight
-        onClick={async (e) => {
+        onClick={async (e: React.MouseEvent<HTMLDivElement>) => {
           e.preventDefault();
           if (isDirectory) {
             setIsOpen(!isOpen);
@@ -394,8 +449,8 @@ export function DirTree({
             ? {
                 padding: 7,
                 paddingLeft: `${(level - 1) * 15 + 4}px`,
-                backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
-                border: `1px solid #${COLORS[THEME].BLUE}`,
+                backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+                border: `1px solid #${colors.PRIMARY}`,
               }
             : {
                 padding: 8,
@@ -443,7 +498,7 @@ export function DirTree({
         ) : dirTree.name.split('.').slice(-1)[0].toLowerCase() ===
           CURLERROO_FILE_EXTENSION ? (
           <TbWorld
-            color={`#${COLORS[THEME].BLUE}`}
+            color={`#${colors.PRIMARY}`}
             style={{ margin: '0 5px', flexShrink: 0 }}
           />
         ) : (
@@ -494,7 +549,7 @@ export function DirTree({
                   duration: 10,
                   style: {
                     width: 400,
-                    background: `#${COLORS[THEME].RED}`,
+                    background: `#${colors.ERROR}`,
                     color: 'white',
                     fontWeight: 'bold',
                   },
@@ -556,6 +611,7 @@ export function FileList({
 }: {
   activeDocument: ActiveDocumentState;
 }) {
+  const colors = useColors();
   const selectedDirectory = useSelector(
     (state: RootState) => state.selectedDirectory.selectedDirectory,
   );
@@ -659,6 +715,7 @@ export function FileList({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        color: `#${colors.TEXT_PRIMARY}`,
       }}
     >
       <div
@@ -733,7 +790,7 @@ export function FileList({
         style={{
           margin: '10px 0',
           height: 1,
-          backgroundColor: `#${COLORS[THEME].GREY2}`,
+          backgroundColor: `#${colors.BORDER}`,
         }}
       />
       <div
@@ -768,7 +825,7 @@ export function FileList({
                 duration: 1,
                 style: {
                   width: 400,
-                  background: `#${COLORS[THEME].GREEN}`,
+                  background: `#${colors.SUCCESS}`,
                   color: 'white',
                   fontWeight: 'bold',
                 },

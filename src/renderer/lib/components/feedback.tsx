@@ -1,10 +1,11 @@
 import 'rc-switch/assets/index.css';
 import { Services } from '@services';
-import { COLORS, THEME } from '@constants';
+import { useColors } from '../contexts/theme-context';
 import { modal } from './modal';
 
 const feedbackUrl = 'https://github.com/CurlerRoo/CurlerRoo/issues/new';
 export function Feedback() {
+  const colors = useColors();
   return (
     <div>
       <div
@@ -20,7 +21,7 @@ export function Feedback() {
             If you have any feedback, please create an issue on our{' '}
             <button
               style={{
-                color: `#${COLORS[THEME].AZURE}`,
+                color: `#${colors.INFO}`,
                 background: 'none',
                 border: 'none',
                 padding: 0,

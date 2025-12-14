@@ -5,6 +5,7 @@ import CodeMirror, {
   EditorView,
   ReactCodeMirrorRef,
 } from '@uiw/react-codemirror';
+import { useCodeMirrorTheme } from './codemirror-theme';
 import { useWatchForRefReady } from '../../hooks/use-watch-for-ref-ready';
 import { openSearchPanel, search } from '@codemirror/search';
 import { useSelector } from 'react-redux';
@@ -53,6 +54,8 @@ export function PlainTextResponse({
     (state: RootState) => state.user,
   );
 
+  const codeMirrorTheme = useCodeMirrorTheme();
+
   return (
     <div
       ref={wrapperRef}
@@ -60,11 +63,14 @@ export function PlainTextResponse({
         height: 'calc(100% - 10px)',
         width: '100%',
         position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 8,
       }}
     >
       <CodeMirror
         ref={codeMirrorRef}
         extensions={[
+          codeMirrorTheme,
           search({
             top: true,
           }),

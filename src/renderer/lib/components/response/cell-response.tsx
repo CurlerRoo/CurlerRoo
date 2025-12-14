@@ -8,6 +8,7 @@ import CodeMirror, {
   ReactCodeMirrorRef,
   Statistics,
 } from '@uiw/react-codemirror';
+import { useCodeMirrorTheme } from './codemirror-theme';
 import { Decoration, ViewPlugin, DecorationSet } from '@codemirror/view';
 import { ResponseHandlerType, responseHandlerTypeToFeature } from './configs';
 import { TextButton } from '../text-button';
@@ -25,7 +26,7 @@ import { JsonTreeResponse } from './json-tree-response';
 import { getHeader } from '../../../../shared/get-header';
 import { BinaryResponse } from '../binary-response';
 import { HtmlResponse } from './html-response';
-import { COLORS, THEME } from '@constants';
+import { useColors, useTheme } from '../../contexts/theme-context';
 import { ImageResponse } from './image-response';
 import { PlainTextResponse } from './plain-text-response';
 import { XmlResponse } from './xml-response';
@@ -36,13 +37,36 @@ import {
 } from '../../hooks/use-watch-for-ref-ready';
 import { RootState } from '../../../state/store';
 
-const MenuItemHoverHighlight = styled.div`
-  &:hover {
-    background-color: #${COLORS[THEME].BACKGROUND_HIGHLIGHT};
-  }
-  padding: 8px;
-  cursor: pointer;
-`;
+const MenuItemHoverHighlight = ({
+  children,
+  onClick,
+  style,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  style?: React.CSSProperties;
+}) => {
+  const colors = useColors();
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: 8,
+        cursor: 'pointer',
+        color: `#${colors.TEXT_PRIMARY}`,
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `#${colors.SURFACE_SECONDARY}`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 const validateVariableName = async (value: string | null) => {
   // user cancelled
@@ -283,6 +307,7 @@ const useHeadersContextMenu = ({
     headerKey: string;
   }) => void;
 }) => {
+  const colors = useColors();
   const headersContextMenu = useContextMenu({
     menu: () => () => {
       if (!headersStatisticsRef.current) {
@@ -306,7 +331,7 @@ const useHeadersContextMenu = ({
           : header.value;
 
       return (
-        <div>
+        <div style={{ minWidth: 200 }}>
           <MenuItemHoverHighlight
             onClick={async () => {
               const [name] = await prompt([
@@ -323,10 +348,13 @@ const useHeadersContextMenu = ({
               headersContextMenu.close();
             }}
           >
-            Create variable from:{' '}
+            <span style={{ color: `#${colors.TEXT_PRIMARY}` }}>
+              Create variable from:{' '}
+            </span>
             <code
               style={{
-                backgroundColor: `#${COLORS[THEME].GREY3}`,
+                backgroundColor: `#${colors.SELECTION}`,
+                color: `#${colors.TEXT_PRIMARY}`,
               }}
             >
               {header.key}
@@ -336,7 +364,7 @@ const useHeadersContextMenu = ({
             style={{
               height: 1,
               width: '100%',
-              backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+              backgroundColor: `#${colors.BORDER}`,
             }}
           />
           <MenuItemHoverHighlight
@@ -345,10 +373,11 @@ const useHeadersContextMenu = ({
               headersContextMenu.close();
             }}
           >
-            Copy:{' '}
+            <span style={{ color: `#${colors.TEXT_PRIMARY}` }}>Copy: </span>
             <code
               style={{
-                backgroundColor: `#${COLORS[THEME].GREY3}`,
+                backgroundColor: `#${colors.SELECTION}`,
+                color: `#${colors.TEXT_PRIMARY}`,
               }}
             >
               {displayValue}
@@ -445,18 +474,6 @@ const createHeadersDecorations = (outputs: HeadersOutput[]) => {
   );
 };
 
-const headersTheme = EditorView.theme({
-  '.cm-header-protocol': {
-    color: `#${COLORS[THEME].RED}`,
-  },
-  '.cm-header-key': {
-    color: `#${COLORS[THEME].GREEN}`,
-  },
-  '.cm-header-value': {
-    color: `#${COLORS[THEME].RED}`,
-  },
-});
-
 export function CellResponses({
   activeCellIndex,
   cell,
@@ -465,6 +482,8 @@ export function CellResponses({
   cell: CurlCellType;
 }) {
   const dispatch = useDispatch();
+  const colors = useColors();
+  const { theme } = useTheme();
   const output = _.last(cell.outputs)!;
 
   const { selectedHandlerType, setSelectedHandlerType, handlerTypes } =
@@ -489,6 +508,58 @@ export function CellResponses({
   const headersDecorations = useMemo(
     () => createHeadersDecorations(cell.outputs),
     [cell.outputs],
+  );
+
+  const codeMirrorTheme = useCodeMirrorTheme();
+
+  const headersTheme = useMemo(
+    () =>
+      EditorView.theme(
+        {
+          '.cm-header-protocol': {
+            color: `#${colors.TEXT_PRIMARY}`,
+            // Make decoration marks not interfere with selection
+            pointerEvents: 'none',
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+          },
+          '.cm-header-key': {
+            color: `#${colors.SUCCESS}`,
+            pointerEvents: 'none',
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+          },
+          '.cm-header-value': {
+            color: `#${colors.SYNTAX_STRING}`,
+            pointerEvents: 'none',
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+          },
+          '&.cm-focused .cm-selectionBackground': {
+            backgroundColor: `#${colors.SELECTION} !important`,
+          },
+          '.cm-selectionBackground': {
+            backgroundColor: `#${colors.SELECTION} !important`,
+          },
+          '.cm-selectionMatch': {
+            backgroundColor: `#${colors.SELECTION} !important`,
+          },
+          '& ::selection': {
+            backgroundColor: `#${colors.SELECTION} !important`,
+          },
+          // Ensure the content area allows selection across decoration boundaries
+          '.cm-content': {
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+          },
+          '.cm-line': {
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+          },
+        },
+        { dark: theme === 'DARK_MODE' },
+      ),
+    [colors, theme],
   );
 
   const headersCodeMirrorRef = useRef<ReactCodeMirrorRef>(null);
@@ -611,14 +682,18 @@ export function CellResponses({
           width: '100%',
           height: '100%',
           zIndex: 100,
-          backgroundColor: 'rgba(255, 255, 255, 0.75)',
+          backgroundColor:
+            theme === 'DARK_MODE'
+              ? 'rgba(13, 17, 23, 0.75)'
+              : 'rgba(255, 255, 255, 0.75)',
+          color: `#${colors.TEXT_PRIMARY}`,
           display: cell.send_status === 'sending' ? 'flex' : 'none',
           justifyContent: 'center',
           alignItems: 'center',
           flexDirection: 'column',
         }}
       >
-        <code>
+        <code style={{ color: `#${colors.TEXT_PRIMARY}` }}>
           &nbsp;&nbsp;&nbsp;Loading
           {_.range(4)
             .map((i) => (i < loadingEclipsis ? '.' : '\u00A0'))
@@ -640,7 +715,7 @@ export function CellResponses({
       <div
         style={{
           position: 'relative',
-          backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
           height: '100%',
           overflow: 'auto',
         }}
@@ -649,7 +724,7 @@ export function CellResponses({
           style={{
             padding: '10px 15px',
             position: 'relative',
-            height: 'calc(100% - 20px)',
+            height: 'calc(100% - 24px)',
           }}
         >
           <TextButton
@@ -681,8 +756,8 @@ export function CellResponses({
                   ref={headersWrapperRef}
                   style={{
                     maxHeight: '25%',
-                    backgroundColor: `#${COLORS[THEME].WHITE}`,
-                    borderRadius: 4,
+                    backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+                    borderRadius: 8,
                     overflow: 'hidden',
                     position: 'relative',
                   }}
@@ -692,6 +767,7 @@ export function CellResponses({
                   <CodeMirror
                     ref={headersCodeMirrorRef}
                     extensions={[
+                      codeMirrorTheme,
                       headersTheme,
                       headersDecorations,
                       ...(wordWrappingInEditor
@@ -734,7 +810,7 @@ export function CellResponses({
                     height: 20,
                   }}
                 >
-                  <div>
+                  <div style={{ color: `#${colors.TEXT_PRIMARY}` }}>
                     View as:{' '}
                     {handlerTypes
                       .map((m) =>
@@ -743,6 +819,7 @@ export function CellResponses({
                             style={{
                               cursor: 'pointer',
                               textDecoration: 'underline',
+                              color: `#${colors.TEXT_PRIMARY}`,
                             }}
                             onClick={() => {
                               setSelectedHandlerType(m);
@@ -755,6 +832,7 @@ export function CellResponses({
                           <span
                             style={{
                               cursor: 'pointer',
+                              color: `#${colors.TEXT_PRIMARY}`,
                             }}
                             onClick={() => {
                               setSelectedHandlerType(m);
@@ -765,7 +843,18 @@ export function CellResponses({
                           </span>
                         ),
                       )
-                      .flatMap((x) => [x, ' | '])
+                      .flatMap((x) => [
+                        x,
+                        <span
+                          key={`sep-${x.key || x}`}
+                          style={{
+                            color: `#${colors.TEXT_SECONDARY}`,
+                          }}
+                        >
+                          {' '}
+                          |{' '}
+                        </span>,
+                      ])
                       .slice(0, -1)}
                   </div>
                   {enabledFeatures.includes('Copy all') && (

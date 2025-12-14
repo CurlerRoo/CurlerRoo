@@ -4,6 +4,7 @@ import 'rc-dialog/assets/index.css';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { store } from '../../state/store';
+import { ThemeProvider, useTheme, useColors } from '../contexts/theme-context';
 
 export function Modal({
   content,
@@ -14,6 +15,8 @@ export function Modal({
   onClose?: () => void;
   visible?: boolean;
 }) {
+  const { theme } = useTheme();
+  const colors = useColors();
   const [_visible, _setVisible] = React.useState(true);
   return (
     <Dialog
@@ -31,17 +34,31 @@ export function Modal({
       maskClosable
       closable={false}
       keyboard={false}
+      maskStyle={{
+        backgroundColor:
+          theme === 'DARK_MODE' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.45)',
+      }}
       style={{
         width: 640,
       }}
       styles={{
         content: {
           width: '100%',
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          border: `1px solid #${colors.BORDER}`,
+          borderRadius: 10,
+          boxShadow:
+            theme === 'DARK_MODE'
+              ? '0 12px 60px rgba(0, 0, 0, 0.65)'
+              : '0 12px 60px rgba(0, 0, 0, 0.35)',
         },
         wrapper: {
           // display: 'flex', is set on App.css
           alignItems: 'center',
           justifyContent: 'center',
+        },
+        body: {
+          color: `#${colors.TEXT_PRIMARY}`,
         },
       }}
     >
@@ -77,7 +94,9 @@ export function modal({ content }: { content: React.ReactNode }) {
 
   createRoot(container).render(
     <Provider store={store}>
-      <Controller />
+      <ThemeProvider>
+        <Controller />
+      </ThemeProvider>
     </Provider>,
   );
 

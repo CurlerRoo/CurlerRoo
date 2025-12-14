@@ -51,17 +51,17 @@ code {
 
 
 .ͼb {
-  color: #0550ae;
+  color: var(--syntax-blue, #0550ae);
 }
 
 .ͼc {
-  color: #0550ae;
+  color: var(--syntax-blue, #0550ae);
 }
 
 .ͼd {
-  color: #1f883d;
+  color: var(--syntax-green, #1f883d);
 }
 
 .ͼe {
-  color: #CF222E;
+  color: var(--syntax-red, #CF222E);
 }

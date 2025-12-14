@@ -9,7 +9,12 @@ import {
   NOT_ANY_BREAKLINE_ESCAPE_CHAR_REGEX,
   PRIVACY_POLICY_VERSION,
   TERMS_OF_SERVICE_VERSION,
-  THEME,
+  THEME_STORAGE_KEY,
+  getThemePreference,
+  setThemePreference,
+  THEME_PREFERENCE,
+  getSystemThemePreference,
+  THEME_NAME,
 } from './constants';
 
 export {
@@ -23,7 +28,12 @@ export {
   NOT_ANY_BREAKLINE_ESCAPE_CHAR_REGEX,
   PRIVACY_POLICY_VERSION,
   TERMS_OF_SERVICE_VERSION,
-  THEME,
+  THEME_STORAGE_KEY,
+  getThemePreference,
+  setThemePreference,
+  THEME_PREFERENCE,
+  getSystemThemePreference,
+  THEME_NAME,
 };
 
 const OS = (() => {

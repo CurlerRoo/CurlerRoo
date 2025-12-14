@@ -25,11 +25,16 @@ import { AppConsent } from './lib/components/app-consent';
 import { showSettings } from './lib/components/settings';
 import { showFeedback } from './lib/components/feedback';
 import {
+  ThemeProvider,
+  useColors,
+  useTheme,
+} from './lib/contexts/theme-context';
+import {
   createFileWithContent,
   selectDirectory,
   setSelectedSubDirectoryOrFile,
 } from './state/features/selected-directory/selected-directory';
-import { COLORS, THEME, ENABLE_UPDATE_FEATURE, PLATFORM } from '@constants';
+import { ENABLE_UPDATE_FEATURE, PLATFORM } from '@constants';
 import { useAutoCheckForUpdates } from './lib/hooks/use-auto-check-for-updates';
 import { modal } from './lib/components/modal';
 import { TextButton } from './lib/components/text-button';
@@ -51,6 +56,7 @@ import scrollIntoView from 'scroll-into-view-if-needed';
 
 function HomeCells() {
   const dispatch: AppDispatch = useDispatch();
+  const colors = useColors();
   const activeDocument = useSelector(
     (state: RootState) => state.activeDocument,
   );
@@ -108,7 +114,8 @@ function HomeCells() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          color: `#${colors.TEXT_PRIMARY}`,
           padding: '0 40px',
           fontSize: 16,
         }}
@@ -119,7 +126,7 @@ function HomeCells() {
             style={{
               border: 'none',
               cursor: 'pointer',
-              color: `#${COLORS[THEME].BLUE}`,
+              color: `#${colors.PRIMARY}`,
               backgroundColor: 'transparent',
               textDecoration: 'underline',
               fontSize: 16,
@@ -146,7 +153,8 @@ function HomeCells() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          color: `#${colors.TEXT_PRIMARY}`,
           padding: '0 40px',
         }}
       >
@@ -160,7 +168,7 @@ function HomeCells() {
             style={{
               border: 'none',
               cursor: 'pointer',
-              color: `#${COLORS[THEME].BLUE}`,
+              color: `#${colors.PRIMARY}`,
               backgroundColor: 'transparent',
               textDecoration: 'underline',
               fontSize: 16,
@@ -211,7 +219,8 @@ function HomeCells() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          color: `#${colors.TEXT_PRIMARY}`,
         }}
       >
         Unsupported file type.
@@ -221,10 +230,16 @@ function HomeCells() {
 
   return (
     <div
-      style={{
-        height: '100%',
-        backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
-      }}
+      style={
+        {
+          height: '100%',
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          color: `#${colors.TEXT_PRIMARY}`,
+          '--syntax-blue': `#${colors.PRIMARY}`,
+          '--syntax-green': `#${colors.SUCCESS}`,
+          '--syntax-red': `#${colors.SYNTAX_STRING}`,
+        } as any
+      }
     >
       <div
         style={{
@@ -254,7 +269,7 @@ function HomeCells() {
               width: '100%',
               height: 1,
               margin: '10px 0',
-              backgroundColor: `#${COLORS[THEME].GREY2}`,
+              backgroundColor: `#${colors.BORDER}`,
             }}
           />
           <div
@@ -461,6 +476,8 @@ function HomeCellResponse() {
 }
 
 function Home() {
+  const colors = useColors();
+  const { theme } = useTheme();
   useSharedLink();
 
   const activeDocument = useSelector(
@@ -543,14 +560,15 @@ function Home() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: `#${COLORS[THEME].BACKGROUND}`,
+            backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+            color: `#${colors.TEXT_PRIMARY}`,
             paddingRight: 5,
           }}
           handleStyles={{
             right: {
               right: 0,
               width: 5,
-              backgroundColor: `#${COLORS[THEME].GREY2}`,
+              backgroundColor: `#${colors.BORDER}`,
             },
           }}
           onResizeStop={(e, direction, ref, d) => {
@@ -571,7 +589,9 @@ function Home() {
             {PLATFORM === 'browser' ? (
               <GitHubButton
                 href="https://github.com/CurlerRoo/CurlerRoo"
-                data-color-scheme="no-preference: light; light: light; dark: light;"
+                data-color-scheme={`no-preference: ${
+                  theme === 'DARK_MODE' ? 'dark' : 'light'
+                }; light: light; dark: ${theme === 'DARK_MODE' ? 'dark' : 'light'};`}
                 data-icon="octicon-star"
                 data-size="large"
                 data-show-count="true"
@@ -622,7 +642,7 @@ function Home() {
                             target="_blank"
                             style={{
                               fontWeight: 'bold',
-                              color: 'black',
+                              color: `#${colors.PRIMARY}`,
                             }}
                           >
                             https://curlerroo.com
@@ -712,12 +732,14 @@ export default function App() {
   // useResetAllStates();
 
   return (
-    <AppConsent>
-      <Router>
-        <Routes>
-          <Route path="*" element={<Home />} />
-        </Routes>
-      </Router>
-    </AppConsent>
+    <ThemeProvider>
+      <AppConsent>
+        <Router>
+          <Routes>
+            <Route path="*" element={<Home />} />
+          </Routes>
+        </Router>
+      </AppConsent>
+    </ThemeProvider>
   );
 }

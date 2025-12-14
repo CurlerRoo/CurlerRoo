@@ -11,6 +11,7 @@ import CodeMirror, {
   EditorView,
   ReactCodeMirrorRef,
 } from '@uiw/react-codemirror';
+import { useCodeMirrorTheme } from './codemirror-theme';
 import { xml } from '@codemirror/lang-xml';
 import { useUpdateEffect } from 'react-use';
 import { openSearchPanel, search } from '@codemirror/search';
@@ -81,6 +82,8 @@ export function XmlResponse({
     (state: RootState) => state.user,
   );
 
+  const codeMirrorTheme = useCodeMirrorTheme();
+
   return (
     <div
       ref={wrapperRef}
@@ -88,11 +91,14 @@ export function XmlResponse({
         height: 'calc(100% - 10px)',
         width: '100%',
         position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 8,
       }}
     >
       <CodeMirror
         ref={codeMirrorRef}
         extensions={[
+          codeMirrorTheme,
           xml(),
           search({ top: true }),
           ...(wordWrappingInEditor ? [EditorView.lineWrapping] : []),

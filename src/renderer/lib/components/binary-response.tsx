@@ -5,7 +5,7 @@ import 'rc-notification/assets/index.css';
 import { Services } from '@services';
 import { getHeader } from '../../../shared/get-header';
 import { TextButton } from './text-button';
-import { COLORS, THEME } from '@constants';
+import { useColors } from '../contexts/theme-context';
 
 export function BinaryResponse({
   response,
@@ -21,6 +21,7 @@ export function BinaryResponse({
     body: string[];
   };
 }) {
+  const colors = useColors();
   const contentType = getHeader(response.headers, 'content-type');
 
   const [bodyFilePathExists, setBodyFilePathExists] = useState(false);
@@ -36,7 +37,7 @@ export function BinaryResponse({
       <div
         style={{
           padding: 10,
-          backgroundColor: `#${COLORS[THEME].WHITE}`,
+          backgroundColor: `#${colors.SURFACE_BRIGHT}`,
           borderRadius: 4,
         }}
       >
@@ -50,7 +51,7 @@ export function BinaryResponse({
       <div
         style={{
           padding: 10,
-          backgroundColor: `#${COLORS[THEME].WHITE}`,
+          backgroundColor: `#${colors.SURFACE_BRIGHT}`,
           borderRadius: 4,
         }}
       >
@@ -67,7 +68,7 @@ export function BinaryResponse({
       <div
         style={{
           padding: 10,
-          backgroundColor: `#${COLORS[THEME].WHITE}`,
+          backgroundColor: `#${colors.SURFACE_BRIGHT}`,
           borderRadius: 4,
         }}
       >
@@ -75,7 +76,7 @@ export function BinaryResponse({
         <TextButton
           icon={VscArrowDown}
           style={{
-            backgroundColor: `#${COLORS[THEME].BACKGROUND_HIGHLIGHT}`,
+            backgroundColor: `#${colors.SURFACE_SECONDARY}`,
           }}
           onClick={async () => {
             const base64 =

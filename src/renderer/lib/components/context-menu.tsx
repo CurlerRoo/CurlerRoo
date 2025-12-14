@@ -3,6 +3,7 @@ import 'rc-dropdown/assets/index.css';
 import { v4 } from 'uuid';
 import { createPortal } from 'react-dom';
 import _ from 'lodash';
+import { useColors } from '../contexts/theme-context';
 
 export function PopMenu({
   children,
@@ -15,6 +16,7 @@ export function PopMenu({
   clientY: number;
   close: () => void;
 }) {
+  const colors = useColors();
   const ref = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(0);
   const [height, setHeight] = React.useState(0);
@@ -68,7 +70,8 @@ export function PopMenu({
           left,
           top,
           zIndex: 999,
-          backgroundColor: 'white',
+          backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+          border: `1px solid #${colors.BORDER}`,
           borderRadius: 6,
           boxShadow: '0 0 40px rgba(0, 0, 0, 0.5)',
         }}

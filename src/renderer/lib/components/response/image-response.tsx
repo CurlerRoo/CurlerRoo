@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Services } from '@services';
 import { getHeader } from '../../../../shared/get-header';
-import { COLORS, THEME } from '../../../../shared/constants/constants';
+import { useColors } from '../../contexts/theme-context';
 
 export function ImageResponse({
   response,
@@ -17,6 +17,7 @@ export function ImageResponse({
     body: string[];
   };
 }) {
+  const colors = useColors();
   const contentType = useMemo(() => {
     return getHeader(response.headers, 'content-type');
   }, [response.headers]);
@@ -38,7 +39,7 @@ export function ImageResponse({
       <div
         style={{
           padding: 10,
-          backgroundColor: `#${COLORS[THEME].WHITE}`,
+          backgroundColor: `#${colors.SURFACE_BRIGHT}`,
           borderRadius: 4,
         }}
       >

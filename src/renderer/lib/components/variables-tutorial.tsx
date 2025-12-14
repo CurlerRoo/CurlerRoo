@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux';
 import { Services } from '@services';
-import { COLORS, THEME } from '@constants';
+import { useColors } from '../contexts/theme-context';
 import { exampleDocument } from '../../../shared/example-document';
 import {
   createFileWithContent,
@@ -13,6 +13,7 @@ export function ShowVariablesTutorialLevel2({
 }: {
   onExampleDocumentCreated: () => void;
 }) {
+  const colors = useColors();
   const dispatch: AppDispatch = useDispatch();
 
   return (
@@ -27,7 +28,7 @@ export function ShowVariablesTutorialLevel2({
             textDecoration: 'underline',
             cursor: 'pointer',
             fontWeight: 'bold',
-            color: `#${COLORS[THEME].BLUE}`,
+            color: `#${colors.PRIMARY}`,
           }}
           onClick={async () => {
             const createResult = await dispatch(
@@ -60,6 +61,7 @@ export const ShowVariablesTutorialLevel1 = ({
 }: {
   onExampleDocumentCreated: () => void;
 }) => {
+  const colors = useColors();
   const dispatch: AppDispatch = useDispatch();
 
   return (
@@ -74,7 +76,7 @@ export const ShowVariablesTutorialLevel1 = ({
             textDecoration: 'underline',
             cursor: 'pointer',
             fontWeight: 'bold',
-            color: `#${COLORS[THEME].BLUE}`,
+            color: `#${colors.PRIMARY}`,
           }}
           onClick={async () => {
             const createResult = await dispatch(
