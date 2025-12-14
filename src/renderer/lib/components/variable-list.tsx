@@ -48,6 +48,10 @@ export function ColorfulButton({
       visible={visible}
       overlayInnerStyle={{
         minHeight: 0,
+        backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+        border: `1px solid #${colors.BORDER}`,
+        borderRadius: 4,
+        padding: 10,
       }}
       placement="bottom"
       trigger="hover"
@@ -57,6 +61,7 @@ export function ColorfulButton({
             maxWidth: 400,
             wordWrap: 'break-word',
             padding: '2px 0',
+            color: `#${colors.TEXT_PRIMARY}`,
           }}
         >
           <div
@@ -146,13 +151,19 @@ export function ColorfulButton({
             <code
               style={{
                 fontSize: 14,
+                color: `#${colors.TEXT_PRIMARY}`,
               }}
             >
               {stringValue}
             </code>
           </div>
           <div style={{ height: 10 }} />
-          <i style={{ fontSize: 13 }}>
+          <i
+            style={{
+              fontSize: 13,
+              color: `#${colors.TEXT_SECONDARY}`,
+            }}
+          >
             Note: Click on it to automatically insert.
           </i>
           <br />
@@ -198,7 +209,7 @@ export function ColorfulButton({
                   style: {
                     width: 400,
                     background: `#${colors.ERROR}`,
-                    color: 'white',
+                    color: `#${colors.SURFACE_BRIGHT}`,
                     fontWeight: 'bold',
                   },
                 });
@@ -215,13 +226,15 @@ export function ColorfulButton({
             right: -5,
             width: 15,
             height: 15,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: `#${colors.ERROR}`,
             borderRadius: Number.MAX_SAFE_INTEGER,
-            color: 'white',
+            color: `#${colors.SURFACE_BRIGHT}`,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 'bold',
           }}
           onClick={() => {
             dispatch(
@@ -231,7 +244,7 @@ export function ColorfulButton({
             );
           }}
         >
-          x
+          ×
         </div>
       </div>
     </Tooltip>

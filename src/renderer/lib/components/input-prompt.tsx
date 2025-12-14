@@ -3,7 +3,7 @@ import 'rc-dialog/assets/index.css';
 import { createRoot } from 'react-dom/client';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { TextButton } from './text-button';
-import { useColors } from '../contexts/theme-context';
+import { useColors, useTheme, ThemeProvider } from '../contexts/theme-context';
 
 export type InputPromptProps = {
   params: {
@@ -17,6 +17,7 @@ export type InputPromptProps = {
 
 export function InputPrompt({ params, onClose }: InputPromptProps) {
   const colors = useColors();
+  const { theme } = useTheme();
   const [visible, setVisible] = useState(true);
   const disableClickRef = useRef(false);
   const [errorMessages, setErrorMessages] = useState([] as string[]);
@@ -73,12 +74,24 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
         setVisible(false);
         onClose();
       }}
+      maskStyle={{
+        backgroundColor:
+          theme === 'DARK_MODE' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.45)',
+      }}
       style={{
         width: 240,
       }}
       styles={{
         content: {
           width: '100%',
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          border: `1px solid #${colors.BORDER}`,
+          borderRadius: 8,
+          overflow: 'hidden',
+          boxShadow:
+            theme === 'DARK_MODE'
+              ? '0 12px 60px rgba(0, 0, 0, 0.65)'
+              : '0 12px 60px rgba(0, 0, 0, 0.35)',
         },
         wrapper: {
           // display: 'flex', is set on App.css
@@ -91,6 +104,8 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 10,
+          color: `#${colors.TEXT_PRIMARY}`,
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
         },
       }}
     >
@@ -98,7 +113,7 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
         const error = errorMessages[i];
         return (
           <div key={label}>
-            <span>{label}</span>
+            <span style={{ color: `#${colors.TEXT_PRIMARY}` }}>{label}</span>
             <div style={{ height: 10 }} />
             {!type || type === 'text' ? (
               <input
@@ -108,7 +123,10 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
                   outline: 'none',
                   height: 20,
                   borderRadius: 4,
-                  border: `1px solid #${error ? colors.ERROR : colors.TEXT_SECONDARY}`,
+                  border: `1px solid #${error ? colors.ERROR : colors.BORDER}`,
+                  backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+                  color: `#${colors.TEXT_PRIMARY}`,
+                  padding: '4px 8px',
                 }}
                 ref={i === 0 ? inputRef : undefined}
                 value={values[i] || ''}
@@ -135,7 +153,10 @@ export function InputPrompt({ params, onClose }: InputPromptProps) {
                   height: 100,
                   width: 200,
                   borderRadius: 4,
-                  border: `1px solid #${error ? colors.ERROR : colors.TEXT_SECONDARY}`,
+                  border: `1px solid #${error ? colors.ERROR : colors.BORDER}`,
+                  backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+                  color: `#${colors.TEXT_PRIMARY}`,
+                  padding: '4px 8px',
                 }}
                 value={values[i] || ''}
                 onChange={(e) =>
@@ -185,22 +206,24 @@ export const prompt = async (
     });
   });
   createRoot(container).render(
-    <InputPrompt
-      params={params.map((param, i) => {
-        return {
-          label: param.label,
-          defaultValue: param.defaultValue,
-          type: param.type,
-          onConfirm: async (value) => {
-            await param.onConfirm?.(value);
-            resolves[i](value);
-          },
-        };
-      })}
-      onClose={() => {
-        document.body.removeChild(container);
-      }}
-    />,
+    <ThemeProvider>
+      <InputPrompt
+        params={params.map((param, i) => {
+          return {
+            label: param.label,
+            defaultValue: param.defaultValue,
+            type: param.type,
+            onConfirm: async (value) => {
+              await param.onConfirm?.(value);
+              resolves[i](value);
+            },
+          };
+        })}
+        onClose={() => {
+          document.body.removeChild(container);
+        }}
+      />
+    </ThemeProvider>,
   );
   const values = await Promise.allSettled(promises);
   document.body.removeChild(container);
