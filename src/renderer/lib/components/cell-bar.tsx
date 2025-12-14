@@ -45,6 +45,7 @@ export function CellBar({
   const colors = useColors();
   const dispatch: AppDispatch = useDispatch();
   const [isFocused, setIsFocused] = useState(false);
+  const isGeneratedName = !cell.name;
 
   return (
     <div
@@ -64,6 +65,7 @@ export function CellBar({
           backgroundColor: isFocused
             ? `#${colors.SURFACE_SECONDARY}`
             : 'transparent',
+          color: isGeneratedName ? `#${colors.TEXT_TERTIARY}` : undefined,
         }}
         onBlur={(e) => {
           const trimmed = e.target.innerText?.trim();
@@ -78,7 +80,7 @@ export function CellBar({
           }
         }}
       >
-        {cell.name}
+        {cell.name || `#${cellIndex + 1}`}
       </CellName>
       <div
         style={{
