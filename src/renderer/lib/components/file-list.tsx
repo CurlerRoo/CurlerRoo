@@ -36,6 +36,9 @@ import {
   setSelectedSubDirectoryOrFile,
   moveDirectoryOrFile,
   createFileWithContent,
+  reorderFilesInDirectory,
+  removeFileFromOrder,
+  addFileToOrder,
 } from '../../state/features/selected-directory/selected-directory';
 import {
   ActiveDocumentState,
@@ -48,12 +51,15 @@ import {
   addDragToDirectories,
   removeDragToDirectories,
   setDragFromDirectory,
+  setDragOverItem,
+  resetDrag,
 } from '../../state/features/drag/drag';
 import { ignoredDirectoryAndFile } from './constants';
 import { modal } from './modal';
 import { useContextMenu } from './context-menu';
 import { GetDirectoryInfoFunction } from '../../../shared/file-interface';
 import { getDocFromDocOnDisk } from '../../../shared/get-doc-from-doc-on-disk';
+import { CurlResponseOutput, CurlSendHistory } from '../../../shared/types';
 
 const HoverHighlight = ({
   children,
@@ -62,6 +68,8 @@ const HoverHighlight = ({
   draggable,
   onDragStart,
   onDragEnd,
+  onDragOver,
+  ...rest
 }: {
   children: React.ReactNode;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -69,6 +77,8 @@ const HoverHighlight = ({
   draggable?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
+  [key: string]: any;
 }) => {
   const colors = useColors();
   return (
@@ -77,7 +87,9 @@ const HoverHighlight = ({
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
       style={style}
+      {...rest}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = `#${colors.SURFACE_SECONDARY}`;
       }}
@@ -158,8 +170,16 @@ export function DirTree({
   const [isRenaming, setIsRenaming] = useState(false);
   const fileNameRef = useRef<HTMLSpanElement | null>(null);
 
-  const { dragToDirectories, dragFromDirectory, dragToCells } = useSelector(
-    (state: RootState) => state.drag,
+  const {
+    dragToDirectories,
+    dragFromDirectory,
+    dragToCells,
+    dragOverItemPath,
+    dragOverItemIndex,
+    dragDropPosition,
+  } = useSelector((state: RootState) => state.drag);
+  const { fileOrder } = useSelector(
+    (state: RootState) => state.selectedDirectory,
   );
 
   const dragToDirectory = Object.entries(dragToDirectories).find(
@@ -184,6 +204,15 @@ export function DirTree({
   const dragFromParentDirectory = dragFromDirectory
     ?.replace(/[^/]+$/, '')
     .slice(0, -1);
+
+  // Get the parent directory path for this item
+  const parentDirectory = isDirectory
+    ? dirTree?.path
+    : dirTree?.path.replace(/[^/]+$/, '').slice(0, -1);
+
+  // Check if we're dragging within the same directory (reordering)
+  const isReordering =
+    dragFromDirectory && dragFromParentDirectory === parentDirectory;
 
   const contextMenu = useContextMenu({
     menu:
@@ -361,6 +390,13 @@ export function DirTree({
     return null;
   }
 
+  // Check if this directory is the target for reordering
+  const isReorderingTarget =
+    isReordering &&
+    isDirectory &&
+    dragOverItemPath &&
+    dirTree.children?.some((child) => child.path === dragOverItemPath);
+
   return (
     <div
       style={{
@@ -371,7 +407,11 @@ export function DirTree({
             ? theme === 'DARK_MODE'
               ? 'rgba(31, 111, 235, 0.25)'
               : 'lightblue'
-            : undefined,
+            : isReorderingTarget
+              ? theme === 'DARK_MODE'
+                ? 'rgba(31, 111, 235, 0.15)'
+                : 'rgba(173, 216, 230, 0.3)'
+              : undefined,
         // if we're at the root level, we want to add some padding to the bottom
         // so that we can drag files into the root directory
         paddingBottom: !level ? 100 : 0,
@@ -393,25 +433,159 @@ export function DirTree({
           : dirTree.path.replace(/[^/]+$/, '').slice(0, -1);
         dispatch(removeDragToDirectories(directory));
       }}
-      onDragEnd={async (e) => {
+      onDragOver={(e) => {
+        if (isReordering && isDirectory) {
+          e.preventDefault();
+          e.stopPropagation();
+          // Check if we're dragging over the directory container itself (for end-of-list drop)
+          const rect = e.currentTarget.getBoundingClientRect();
+          const mouseY = e.clientY;
+          // If mouse is in the bottom 20% of the container, treat as end-of-list drop
+          const isNearBottom = mouseY > rect.top + rect.height * 0.8;
+          if (isNearBottom) {
+            // Set this directory as the drag over target for dropping at the end
+            dispatch(
+              setDragOverItem({
+                itemPath: dirTree.path,
+                dropPosition: undefined, // undefined means end of list
+              }),
+            );
+          }
+        }
+      }}
+      onDrop={async (e) => {
+        e.preventDefault();
         e.stopPropagation();
         if (!dragFromDirectory) {
           return;
         }
+
+        const targetDirectory = isDirectory
+          ? dirTree.path
+          : dirTree.path.replace(/[^/]+$/, '').slice(0, -1);
+        const sourceParentDirectory = dragFromDirectory
+          .replace(/[^/]+$/, '')
+          .slice(0, -1);
+
+        // Only handle reordering within the same directory in onDrop
+        // Moves between directories are handled in onDragEnd
+        if (
+          isReordering &&
+          targetDirectory === sourceParentDirectory &&
+          dragOverItemPath
+        ) {
+          // Reorder within the same directory
+          const currentOrder = fileOrder[targetDirectory] || [];
+          const draggedPath = dragFromDirectory;
+
+          // Get current children to build order if needed
+          const currentChildren = dirTree.children || [];
+          const filteredChildren = currentChildren.filter(
+            (child) => !ignoredDirectoryAndFile.includes(child.name),
+          );
+
+          // If no order exists yet, create one from current children (sorted by default)
+          let workingOrder = currentOrder.length > 0 ? [...currentOrder] : [];
+          if (workingOrder.length === 0) {
+            workingOrder = filteredChildren.map((child) => child.path);
+          } else {
+            // Merge: add any new children that aren't in the order
+            const existingPaths = new Set(workingOrder);
+            filteredChildren.forEach((child) => {
+              if (!existingPaths.has(child.path)) {
+                workingOrder.push(child.path);
+              }
+            });
+          }
+
+          // Remove dragged item from current position
+          const filteredOrder = workingOrder.filter(
+            (path) => path !== draggedPath,
+          );
+
+          // If dragOverItemPath is the directory itself, append to end
+          // Otherwise, find the target item and insert based on drop position
+          if (dragOverItemPath === targetDirectory) {
+            filteredOrder.push(draggedPath);
+          } else {
+            const targetIndex = filteredOrder.findIndex(
+              (path) => path === dragOverItemPath,
+            );
+            // Insert at target position based on drop position
+            if (targetIndex !== -1) {
+              if (dragDropPosition === 'above') {
+                // Insert before the target item
+                filteredOrder.splice(targetIndex, 0, draggedPath);
+              } else {
+                // Insert after the target item
+                filteredOrder.splice(targetIndex + 1, 0, draggedPath);
+              }
+            } else {
+              // If target not found, append to end
+              filteredOrder.push(draggedPath);
+            }
+          }
+
+          dispatch(
+            reorderFilesInDirectory({
+              directoryPath: targetDirectory,
+              orderedPaths: filteredOrder,
+            }),
+          );
+          dispatch(resetDrag());
+        }
+        // Don't handle moves between directories here - let onDragEnd handle it
+      }}
+      onDragEnd={async (e) => {
+        e.stopPropagation();
+        if (!dragFromDirectory) {
+          dispatch(resetDrag());
+          return;
+        }
+
+        // Handle move between directories (reordering is handled in onDrop)
         if (extendedDragToDirectory) {
           const name = dragFromDirectory.replace(/.*\//, '');
           const newPath = `${extendedDragToDirectory}/${name}`;
           const oldPath = dragFromDirectory;
+          const sourceParentDirectory = dragFromDirectory
+            .replace(/[^/]+$/, '')
+            .slice(0, -1);
 
-          // TODO: these actions should be atomic
-          await dispatch(moveDirectoryOrFile({ newPath, oldPath }));
-          if (activeDocument && oldPath === activeDocument.filePath) {
-            dispatch(
-              setSelectedSubDirectoryOrFile({
-                path: newPath,
-                type: isDirectory ? 'directory' : 'file',
-              }),
-            );
+          // Only move if it's actually a different directory
+          if (extendedDragToDirectory !== sourceParentDirectory) {
+            // TODO: these actions should be atomic
+            await dispatch(moveDirectoryOrFile({ newPath, oldPath }));
+
+            // Update order in new directory
+            const newDirOrder = fileOrder[extendedDragToDirectory] || [];
+            if (!newDirOrder.includes(newPath)) {
+              dispatch(
+                addFileToOrder({
+                  directoryPath: extendedDragToDirectory,
+                  filePath: newPath,
+                }),
+              );
+            }
+
+            // Remove from old directory order
+            if (sourceParentDirectory && fileOrder[sourceParentDirectory]) {
+              dispatch(
+                removeFileFromOrder({
+                  directoryPath: sourceParentDirectory,
+                  filePath: oldPath,
+                }),
+              );
+            }
+
+            if (activeDocument && oldPath === activeDocument.filePath) {
+              dispatch(
+                setSelectedSubDirectoryOrFile({
+                  path: newPath,
+                  type: isDirectory ? 'directory' : 'file',
+                }),
+              );
+            }
           }
         } else if (dragToCell) {
           dispatch(
@@ -421,9 +595,27 @@ export function DirTree({
             }),
           );
         }
+        dispatch(resetDrag());
       }}
     >
       {contextMenu.menuPortal}
+      {/* Drop indicator line - show above this item if dragging over and drop position is 'above' */}
+      {isReordering &&
+        dragOverItemPath === dirTree.path &&
+        dragDropPosition === 'above' &&
+        dragFromDirectory !== dirTree.path && (
+          <div
+            style={{
+              height: 2,
+              backgroundColor: `#${colors.PRIMARY}`,
+              marginLeft: `${(level - 1) * 15 + 5}px`,
+              marginRight: 5,
+              borderRadius: 1,
+              zIndex: 10,
+              position: 'relative',
+            }}
+          />
+        )}
       <HoverHighlight
         onClick={async (e: React.MouseEvent<HTMLDivElement>) => {
           e.preventDefault();
@@ -464,7 +656,27 @@ export function DirTree({
         onDragStart={() => {
           dispatch(setDragFromDirectory(dirTree.path));
         }}
-        onDragEnd={() => {}}
+        onDragOver={(e) => {
+          if (isReordering && dragFromDirectory !== dirTree.path) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Determine if we're dropping above or below based on mouse position
+            const rect = e.currentTarget.getBoundingClientRect();
+            const mouseY = e.clientY;
+            const itemMiddle = rect.top + rect.height / 2;
+            const dropPosition = mouseY < itemMiddle ? 'above' : 'below';
+            // Set this item as the drag over target
+            dispatch(
+              setDragOverItem({
+                itemPath: dirTree.path,
+                dropPosition,
+              }),
+            );
+          }
+        }}
+        onDragEnd={() => {
+          dispatch(resetDrag());
+        }}
         {...contextMenu.getProps({
           customData: {
             'is-directory': isDirectory,
@@ -578,29 +790,96 @@ export function DirTree({
           {dirTree.name}
         </span>
       </HoverHighlight>
+      {/* Drop indicator line - show below this item if dragging over and drop position is 'below' */}
+      {isReordering &&
+        dragOverItemPath === dirTree.path &&
+        dragDropPosition === 'below' &&
+        dragFromDirectory !== dirTree.path && (
+          <div
+            style={{
+              height: 2,
+              backgroundColor: `#${colors.PRIMARY}`,
+              marginLeft: `${(level - 1) * 15 + 5}px`,
+              marginRight: 5,
+              borderRadius: 1,
+              zIndex: 10,
+              position: 'relative',
+            }}
+          />
+        )}
       {isDirectory && isOpen
-        ? _(dirTree.children)
-            .sortBy((tree) => {
-              if (tree.children) {
-                // this is a hack to make sure that directories are sorted before files
-                return '' + tree.name.toLowerCase();
-              }
-              return tree.name.toLowerCase();
-            })
-            .map((child) => {
-              if (ignoredDirectoryAndFile.includes(child.name)) {
-                return null;
-              }
-              return (
-                <DirTree
-                  activeDocument={activeDocument}
-                  key={child.name}
-                  dirTree={child}
-                  level={level + 1}
-                />
-              );
-            })
-            .value()
+        ? (() => {
+            const children = dirTree.children || [];
+            const filteredChildren = children.filter(
+              (child) => !ignoredDirectoryAndFile.includes(child.name),
+            );
+
+            // Get custom order for this directory - all files should be tracked now
+            const customOrder = fileOrder[dirTree.path] || [];
+            const orderMap = new Map<string, number>();
+            customOrder.forEach((path, index) => {
+              orderMap.set(path, index);
+            });
+
+            // Create a map of all items for quick lookup
+            const itemsMap = new Map<string, (typeof filteredChildren)[0]>();
+            filteredChildren.forEach((child) => {
+              itemsMap.set(child.path, child);
+            });
+
+            // Sort by custom order - all files should be in the order
+            const sortedChildren = customOrder
+              .map((path) => itemsMap.get(path))
+              .filter((item): item is (typeof filteredChildren)[0] => !!item);
+
+            // Add any items that might not be in the order yet (shouldn't happen, but safety check)
+            const orderedPaths = new Set(customOrder);
+            const missingItems = filteredChildren.filter(
+              (child) => !orderedPaths.has(child.path),
+            );
+            if (missingItems.length > 0) {
+              // Sort missing items by default sort and append
+              const sortedMissing = _(missingItems)
+                .sortBy((tree) => {
+                  if (tree.children) {
+                    return '' + tree.name.toLowerCase();
+                  }
+                  return tree.name.toLowerCase();
+                })
+                .value();
+              sortedChildren.push(...sortedMissing);
+            }
+
+            return (
+              <>
+                {sortedChildren.map((child) => (
+                  <DirTree
+                    activeDocument={activeDocument}
+                    key={child.path}
+                    dirTree={child}
+                    level={level + 1}
+                  />
+                ))}
+                {/* Drop indicator line at the end of directory if dragging over directory itself */}
+                {isReordering &&
+                  dragOverItemPath === dirTree.path &&
+                  dragFromDirectory !== dirTree.path &&
+                  !dragDropPosition && (
+                    <div
+                      style={{
+                        height: 2,
+                        backgroundColor: `#${colors.PRIMARY}`,
+                        marginLeft: `${level * 15 + 5}px`,
+                        marginRight: 5,
+                        borderRadius: 1,
+                        zIndex: 10,
+                        position: 'relative',
+                      }}
+                    />
+                  )}
+              </>
+            );
+          })()
         : null}
     </div>
   );
@@ -668,6 +947,8 @@ export function FileList({
                     formattedBody: '',
                   },
                 ],
+                sendHistories: [],
+                selectedSendHistoryId: undefined,
                 source: [''],
                 pre_scripts_enabled: false,
                 pre_scripts: [''],
@@ -695,6 +976,17 @@ export function FileList({
                 ...output,
                 formattedBody: '',
               })),
+              sendHistories: (cell.sendHistories || []).map(
+                (history: CurlSendHistory) => ({
+                  ...history,
+                  outputs: (history.outputs || []).map(
+                    (output: CurlResponseOutput) => ({
+                      ...output,
+                      formattedBody: '',
+                    }),
+                  ),
+                }),
+              ),
             })),
             globalVariables: document.globalVariables,
             activeCellIndex: 0,

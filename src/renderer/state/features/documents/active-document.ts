@@ -5,11 +5,12 @@ import { v4 } from 'uuid';
 import { Services } from '@services';
 import {
   CurlCellType,
-  DocOnDiskType,
+  CurlResponseOutput,
   Variable,
 } from '../../../../shared/types';
 import { getCurlParts } from '../../../../shared/get-curl-parts';
 import { validateCurlSyntax } from '../../../../shared/validate-curl';
+import { UserState } from '../user/user';
 
 type RandomNumber = number;
 
@@ -25,10 +26,51 @@ export type ActiveDocumentState = null | {
   filePath: string | null;
 };
 
+const createEmptyOutput = (): CurlResponseOutput => ({
+  protocol: '',
+  bodyFilePath: '',
+  bodyBase64: '',
+  body: [''],
+  headers: {},
+  status: 0,
+  responseDate: 0,
+  formattedBody: '',
+});
+
+const addHistoryEntryToCell = (
+  cell: CurlCellType,
+  outputs: CurlResponseOutput[],
+  sentAt?: number,
+  maxEntries?: number,
+) => {
+  const maxHistoryEntries = maxEntries ?? 20;
+  const historyEntry = {
+    id: v4(),
+    sentAt: sentAt ?? Date.now(),
+    request: {
+      source: cell.source,
+      pre_scripts: cell.pre_scripts,
+      post_scripts: cell.post_scripts,
+      pre_scripts_enabled: cell.pre_scripts_enabled,
+      post_scripts_enabled: cell.post_scripts_enabled,
+    },
+    outputs,
+  };
+  const currentHistories = cell.sendHistories || [];
+  // Keep only the most recent (maxEntries - 1) entries, then add the new one
+  const trimmedHistories =
+    currentHistories.length >= maxHistoryEntries
+      ? currentHistories.slice(-(maxHistoryEntries - 1))
+      : currentHistories;
+  cell.sendHistories = [...trimmedHistories, historyEntry];
+  cell.selectedSendHistoryId = historyEntry.id;
+  cell.outputs = outputs;
+};
+
 export const saveActiveDocument = createAsyncThunk<
   void,
   void,
-  { state: { activeDocument: ActiveDocumentState } }
+  { state: { activeDocument: ActiveDocumentState; user?: UserState } }
 >('activeDocument/saveActiveDocument', async (__, thunkAPI) => {
   const state = thunkAPI.getState().activeDocument as ActiveDocumentState;
   if (!state) {
@@ -53,7 +95,7 @@ export const executePreScript = createAsyncThunk<
     variables: Variable[];
   },
   { cellIndex: number },
-  { state: { activeDocument: ActiveDocumentState } }
+  { state: { activeDocument: ActiveDocumentState; user?: UserState } }
 >('activeDocument/executePreScript', async ({ cellIndex }, thunkAPI) => {
   const state = thunkAPI.getState().activeDocument as ActiveDocumentState;
   if (!state) {
@@ -81,7 +123,7 @@ export const executePostScript = createAsyncThunk<
     bodyText: string;
     resHeaders?: { [key: string]: string };
   },
-  { state: { activeDocument: ActiveDocumentState } }
+  { state: { activeDocument: ActiveDocumentState; user?: UserState } }
 >(
   'activeDocument/executePostScript',
   async ({ cellIndex, bodyText, resHeaders }, thunkAPI) => {
@@ -113,13 +155,15 @@ export const sendCurl = createAsyncThunk<
       bodyBase64: string;
       bodyText: string;
     }[];
+    maxHistoryEntries: number;
   },
   { cellIndex: number; selectedDirectory: string },
-  { state: { activeDocument: ActiveDocumentState } }
+  { state: { activeDocument: ActiveDocumentState; user?: UserState } }
 >(
   'activeDocument/sendCurl',
   async ({ cellIndex, selectedDirectory }, thunkAPI) => {
     const state = thunkAPI.getState().activeDocument as ActiveDocumentState;
+    const userState = thunkAPI.getState().user;
     if (!state) {
       throw new Error('No active document');
     }
@@ -157,8 +201,11 @@ export const sendCurl = createAsyncThunk<
       .then((responses) =>
         responses.map((response) => {
           return {
-            ...response,
+            protocol: response.protocol,
+            status: response.status,
+            headers: response.headers,
             bodyFilePath: response.bodyFilePath,
+            bodyBase64: response.bodyBase64,
             bodyText: response.body,
           };
         }),
@@ -184,6 +231,7 @@ export const sendCurl = createAsyncThunk<
 
     return {
       responses,
+      maxHistoryEntries: userState?.maxSendHistoryEntries ?? 20,
     };
   },
 );
@@ -198,13 +246,15 @@ export const validateCellAndSendCurl = createAsyncThunk<
       bodyBase64: string;
       bodyText: string;
     }[];
+    maxHistoryEntries: number;
   },
   { cellIndex: number; selectedDirectory: string },
-  { state: { activeDocument: ActiveDocumentState } }
+  { state: { activeDocument: ActiveDocumentState; user?: UserState } }
 >(
   'activeDocument/validateCellAndSendCurl',
   async ({ cellIndex, selectedDirectory }, thunkAPI) => {
     const state = thunkAPI.getState().activeDocument as ActiveDocumentState;
+    const userState = thunkAPI.getState().user;
     if (!state) {
       throw new Error('No active document');
     }
@@ -217,11 +267,12 @@ export const validateCellAndSendCurl = createAsyncThunk<
       throw new Error(curlValidationResult[0].errorMessage);
     }
 
-    const { responses } = await thunkAPI
+    const { responses, maxHistoryEntries } = await thunkAPI
       .dispatch(sendCurl({ cellIndex, selectedDirectory }))
       .unwrap();
     return {
       responses,
+      maxHistoryEntries,
     };
   },
 );
@@ -229,7 +280,7 @@ export const validateCellAndSendCurl = createAsyncThunk<
 export const setExecutingAllCells = createAsyncThunk<
   boolean,
   boolean,
-  { state: { activeDocument: ActiveDocumentState } }
+  { state: { activeDocument: ActiveDocumentState; user?: UserState } }
 >(
   'activeDocument/setExecutingAllCells',
   async (executingAllCells, thunkAPI) => {
@@ -244,7 +295,7 @@ export const setExecutingAllCells = createAsyncThunk<
 export const sendAllCurls = createAsyncThunk<
   Promise<void>,
   { selectedDirectory: string },
-  { state: { activeDocument: ActiveDocumentState } }
+  { state: { activeDocument: ActiveDocumentState; user?: UserState } }
 >('activeDocument/sendAllCurls', async ({ selectedDirectory }, thunkAPI) => {
   const state = thunkAPI.getState().activeDocument as ActiveDocumentState;
   if (!state) {
@@ -299,6 +350,8 @@ const initialState = {
           formattedBody: '',
         },
       ],
+      sendHistories: [],
+      selectedSendHistoryId: undefined,
       source: [''],
       pre_scripts_enabled: false,
       pre_scripts: [''],
@@ -318,7 +371,7 @@ export const activeDocumentSlice = createSlice({
   reducers: {
     setCellName: (
       state,
-      action: PayloadAction<{ cellIndex: number; name: string }>,
+      action: PayloadAction<{ cellIndex: number; name: string | undefined }>,
     ) => {
       if (!state) {
         throw new Error('No active document');
@@ -401,6 +454,10 @@ export const activeDocumentSlice = createSlice({
       if (!state) {
         throw new Error('No active document');
       }
+      // Prevent deletion if there's only one cell
+      if (state.cells.length <= 1) {
+        return;
+      }
       if (action.payload === state.cells.length - 1) {
         state.activeCellIndex = action.payload - 1;
       }
@@ -450,19 +507,11 @@ export const activeDocumentSlice = createSlice({
       if (!state) {
         throw new Error('No active document');
       }
-      state.cells[action.payload.cellIndex].send_status = 'idle';
-      state.cells[action.payload.cellIndex].outputs = [
-        {
-          protocol: '',
-          bodyFilePath: '',
-          bodyBase64: '',
-          body: [''],
-          headers: {},
-          status: 0,
-          responseDate: 0,
-          formattedBody: '',
-        },
-      ];
+      const cell = state.cells[action.payload.cellIndex];
+      cell.send_status = 'idle';
+      cell.outputs = [createEmptyOutput()];
+      cell.sendHistories = [];
+      cell.selectedSendHistoryId = undefined;
     },
     cancelSend: (state, action: PayloadAction<{ cellIndex: number }>) => {
       if (!state) {
@@ -547,6 +596,30 @@ export const activeDocumentSlice = createSlice({
       state.cells[action.payload.cellIndex].cursor_position =
         action.payload.cursorPosition;
     },
+    selectResponseHistory: (
+      state,
+      action: PayloadAction<{ cellIndex: number; historyId: string }>,
+    ) => {
+      if (!state) {
+        throw new Error('No active document');
+      }
+      const cell = state.cells[action.payload.cellIndex];
+      const history = (cell.sendHistories || []).find(
+        (h) => h.id === action.payload.historyId,
+      );
+      if (!history) {
+        return;
+      }
+      cell.selectedSendHistoryId = history.id;
+      cell.outputs = history.outputs;
+      cell.source = history.request?.source || cell.source;
+      cell.pre_scripts = history.request?.pre_scripts || cell.pre_scripts;
+      cell.post_scripts = history.request?.post_scripts || cell.post_scripts;
+      cell.pre_scripts_enabled =
+        history.request?.pre_scripts_enabled ?? cell.pre_scripts_enabled;
+      cell.post_scripts_enabled =
+        history.request?.post_scripts_enabled ?? cell.post_scripts_enabled;
+    },
   },
   extraReducers: (builder) => {
     const sendCurlPending = (
@@ -577,7 +650,7 @@ export const activeDocumentSlice = createSlice({
       }
       cell.send_status = 'error';
       cell.sending_id = undefined;
-      cell.outputs = [
+      const outputs = [
         {
           protocol: '',
           bodyFilePath: '',
@@ -591,9 +664,11 @@ export const activeDocumentSlice = createSlice({
           formattedBody: '',
           headers: {},
           status: 0,
-          responseDate: 0,
+          responseDate: Date.now(),
         },
       ];
+      // For rejected actions, use default max history entries
+      addHistoryEntryToCell(cell, outputs, undefined, 20);
     };
     builder.addCase(sendCurl.rejected, sendCurlRejected);
     builder.addCase(validateCellAndSendCurl.rejected, sendCurlRejected);
@@ -610,11 +685,11 @@ export const activeDocumentSlice = createSlice({
         if (cell.sending_id !== action.meta.requestId) {
           return;
         }
-        const { responses } = action.payload;
+        const { responses, maxHistoryEntries } = action.payload;
 
         cell.send_status = 'success';
         cell.sending_id = undefined;
-        cell.outputs = responses.map((response) => ({
+        const outputs = responses.map((response) => ({
           protocol: response.protocol,
           bodyFilePath: response.bodyFilePath,
           bodyBase64: response.bodyBase64,
@@ -624,6 +699,7 @@ export const activeDocumentSlice = createSlice({
           status: response.status,
           responseDate: Date.now(),
         }));
+        addHistoryEntryToCell(cell, outputs, undefined, maxHistoryEntries);
       })();
     };
     builder.addCase(sendCurl.fulfilled, sendCurlFulfilled);
@@ -730,4 +806,5 @@ export const {
   setCursorPosition,
   forceRefocusActiveCell,
   setCellName,
+  selectResponseHistory,
 } = activeDocumentSlice.actions;

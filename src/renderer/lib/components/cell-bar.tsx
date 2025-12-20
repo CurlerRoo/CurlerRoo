@@ -1,4 +1,4 @@
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   VscChevronDown,
   VscChevronUp,
@@ -14,7 +14,7 @@ import {
   validateCellAndSendCurl,
   setCellName,
 } from '../../state/features/documents/active-document';
-import { AppDispatch } from '../../state/store';
+import { AppDispatch, RootState } from '../../state/store';
 import { TextButton } from './text-button';
 import { CurlCellType } from '../../../shared/types';
 import styled from 'styled-components';
@@ -44,8 +44,13 @@ export function CellBar({
 }) {
   const colors = useColors();
   const dispatch: AppDispatch = useDispatch();
+  const activeDocument = useSelector(
+    (state: RootState) => state.activeDocument,
+  );
   const [isFocused, setIsFocused] = useState(false);
   const isGeneratedName = !cell.name;
+  const generatedName = isGeneratedName ? `#${cellIndex + 1}` : undefined;
+  const isOnlyCell = activeDocument?.cells?.length === 1;
 
   return (
     <div
@@ -68,8 +73,10 @@ export function CellBar({
           color: isGeneratedName ? `#${colors.TEXT_TERTIARY}` : undefined,
         }}
         onBlur={(e) => {
-          const trimmed = e.target.innerText?.trim();
-          dispatch(setCellName({ cellIndex, name: trimmed }));
+          const name = e.target.innerText?.trim() || undefined;
+          if (!generatedName || name !== generatedName) {
+            dispatch(setCellName({ cellIndex, name }));
+          }
           setIsFocused(false);
         }}
         onKeyDown={(e) => {
@@ -80,7 +87,7 @@ export function CellBar({
           }
         }}
       >
-        {cell.name || `#${cellIndex + 1}`}
+        {cell.name || generatedName}
       </CellName>
       <div
         style={{
@@ -126,12 +133,15 @@ export function CellBar({
         <TextButton
           icon={VscTrash}
           iconProps={{ size: 16 }}
-          style={textButtonStyle}
+          style={
+            isOnlyCell ? { ...textButtonStyle, opacity: 0.3 } : textButtonStyle
+          }
           type="button"
           onClick={() => {
             dispatch(removeCell(cellIndex));
           }}
-          tooltip="Delete cell"
+          tooltip={isOnlyCell ? 'Cannot delete the only cell' : 'Delete cell'}
+          disabled={isOnlyCell}
         />
       </div>
     </div>

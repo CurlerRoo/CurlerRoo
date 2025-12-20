@@ -13,6 +13,7 @@ import { v4 } from 'uuid';
 import { ENDPOINT0 } from '../../../shared/constants/constants';
 import { modal } from '../components/modal';
 import { useSearchParams } from 'react-router-dom';
+import { getDocFromDocOnDisk } from '../../../shared/get-doc-from-doc-on-disk';
 
 export const useSharedLink = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,27 +58,41 @@ export const useSharedLink = () => {
 
             const createResult = await dispatch(
               createFileWithContent({
-                content: {
-                  ...document,
-                  id: document.id || v4(),
-                  shared_id: sharedKey,
-                  cells: document.cells.map((cell) => ({
-                    ...cell,
-                    cursor_position: {
-                      column: 0,
-                      lineNumber: 0,
-                      offset: 0,
-                    },
-                    outputs: cell.outputs.map((output) => ({
-                      ...output,
-                      bodyFilePath: '',
-                      bodyBase64: '',
-                      formattedBody: '',
+                content: (() => {
+                  const parsedDoc = getDocFromDocOnDisk(document);
+                  return {
+                    ...parsedDoc,
+                    id: parsedDoc.id || v4(),
+                    shared_id: sharedKey,
+                    executingAllCells: false,
+                    cells: parsedDoc.cells.map((cell) => ({
+                      ...cell,
+                      cursor_position: {
+                        column: 0,
+                        lineNumber: 0,
+                        offset: 0,
+                      },
+                      outputs: cell.outputs.map((output) => ({
+                        ...output,
+                        bodyFilePath: '',
+                        bodyBase64: '',
+                        formattedBody: '',
+                      })),
+                      sendHistories: (cell.sendHistories || []).map(
+                        (history) => ({
+                          ...history,
+                          outputs: history.outputs.map((output) => ({
+                            ...output,
+                            bodyFilePath: '',
+                            bodyBase64: '',
+                            formattedBody: '',
+                          })),
+                        }),
+                      ),
+                      id: cell.id || v4(),
                     })),
-                    id: cell.id || v4(),
-                  })),
-                  executingAllCells: false,
-                },
+                  };
+                })(),
                 name: `${sharedKey}.crr`,
               }),
             ).then((m) => m.payload as ReturnType<typeof Services.createFile>);

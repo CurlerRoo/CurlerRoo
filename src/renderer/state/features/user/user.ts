@@ -6,10 +6,12 @@ export type UserState = {
   acceptedPrivacyPolicyVersion?: string;
   allowedAnalytics?: boolean;
   wordWrappingInEditor?: boolean;
+  maxSendHistoryEntries?: number;
 };
 
 const initialState = {
   wordWrappingInEditor: true,
+  maxSendHistoryEntries: 20,
 } as UserState;
 
 export const userSlice = createSlice({
@@ -27,10 +29,18 @@ export const userSlice = createSlice({
     setWordWrappingInEditor: (state, { payload }: { payload: boolean }) => {
       state.wordWrappingInEditor = payload;
     },
+    setMaxSendHistoryEntries: (state, { payload }: { payload: number }) => {
+      state.maxSendHistoryEntries = payload;
+    },
   },
 });
 
-export const { acceptTerms, allowAnalytics, reset, setWordWrappingInEditor } =
-  userSlice.actions;
+export const {
+  acceptTerms,
+  allowAnalytics,
+  reset,
+  setWordWrappingInEditor,
+  setMaxSendHistoryEntries,
+} = userSlice.actions;
 
 export default userSlice.reducer;

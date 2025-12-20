@@ -16,6 +16,7 @@ import {
   addCell,
   sendAllCurls,
   setActiveCellIndex,
+  selectResponseHistory,
 } from '../../state/features/documents/active-document';
 import { AppDispatch, RootState } from '../../state/store';
 import { TextButton } from './text-button';
@@ -59,11 +60,14 @@ const HoverHighlight = ({
 function SearchAll({ close }: { close: () => void }) {
   const colors = useColors();
   const [search, setSearch] = useState('');
+  const [includeHistories, setIncludeHistories] = useState(true);
   const [results, setResults] = useState<
     {
       filePath: string;
       cellIndex: number;
       previewText: [string, string, string];
+      historyId?: string;
+      sentAt?: number;
     }[]
   >([]);
 
@@ -81,12 +85,13 @@ function SearchAll({ close }: { close: () => void }) {
         const results = await searchAll({
           text: search,
           selectedDirectoryInfo,
+          includeHistories,
         });
         setResults(results);
       })();
     },
     500,
-    [search, selectedDirectoryInfo],
+    [search, selectedDirectoryInfo, includeHistories],
   );
 
   const [targetCellIndex, setTargetCellIndex] = useState(-1);
@@ -100,15 +105,35 @@ function SearchAll({ close }: { close: () => void }) {
 
   const dispatch = useDispatch();
 
+  const [targetHistoryId, setTargetHistoryId] = useState<string | undefined>(
+    undefined,
+  );
+
   useEffect(() => {
     if (
       activeFilePath === selectedSubDirectoryOrFile &&
       targetCellIndex !== -1
     ) {
+      const cellIndex = targetCellIndex;
       setTargetCellIndex(-1);
-      dispatch(setActiveCellIndex(targetCellIndex));
+      dispatch(setActiveCellIndex(cellIndex));
+      if (targetHistoryId) {
+        dispatch(
+          selectResponseHistory({
+            cellIndex,
+            historyId: targetHistoryId,
+          }),
+        );
+        setTargetHistoryId(undefined);
+      }
     }
-  }, [dispatch, selectedSubDirectoryOrFile, activeFilePath, targetCellIndex]);
+  }, [
+    dispatch,
+    selectedSubDirectoryOrFile,
+    activeFilePath,
+    targetCellIndex,
+    targetHistoryId,
+  ]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -134,7 +159,31 @@ function SearchAll({ close }: { close: () => void }) {
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search"
       />
-      <div style={{ height: 20 }} />
+      <div style={{ height: 10 }} />
+      <label
+        htmlFor="include-histories-checkbox"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: 8,
+          color: `#${colors.TEXT_PRIMARY}`,
+          cursor: 'pointer',
+          fontSize: '0.9em',
+        }}
+      >
+        <input
+          id="include-histories-checkbox"
+          type="checkbox"
+          checked={includeHistories}
+          onChange={(e) => setIncludeHistories(e.target.checked)}
+          style={{
+            cursor: 'pointer',
+          }}
+        />
+        <span>Include histories</span>
+      </label>
+      <div style={{ height: 10 }} />
       <div
         style={{
           maxHeight: 300,
@@ -160,6 +209,9 @@ function SearchAll({ close }: { close: () => void }) {
             }}
             onClick={() => {
               setTargetCellIndex(m.cellIndex);
+              if (m.historyId) {
+                setTargetHistoryId(m.historyId);
+              }
               dispatch(
                 setSelectedSubDirectoryOrFile({
                   path: m.filePath,
@@ -173,9 +225,32 @@ function SearchAll({ close }: { close: () => void }) {
               style={{
                 padding: 5,
                 color: `#${colors.PRIMARY}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
-              {m.filePath}
+              <span>{m.filePath}</span>
+              {m.historyId && m.sentAt ? (
+                <span
+                  style={{
+                    color: `#${colors.TEXT_SECONDARY}`,
+                    fontSize: '0.9em',
+                  }}
+                >
+                  (historical • {new Date(m.sentAt).toLocaleDateString()}{' '}
+                  {new Date(m.sentAt).toLocaleTimeString()})
+                </span>
+              ) : (
+                <span
+                  style={{
+                    color: `#${colors.TEXT_SECONDARY}`,
+                    fontSize: '0.9em',
+                  }}
+                >
+                  (current)
+                </span>
+              )}
             </div>
             <HoverHighlight style={{ padding: 5, marginLeft: 20 }}>
               <span style={{ color: `#${colors.TEXT_SECONDARY}` }}>
@@ -495,6 +570,8 @@ export function NavBar({
                     formattedBody: '',
                   },
                 ],
+                sendHistories: [],
+                selectedSendHistoryId: undefined,
                 source: [''],
                 pre_scripts_enabled: false,
                 pre_scripts: [''],

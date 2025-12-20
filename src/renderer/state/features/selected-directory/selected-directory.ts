@@ -8,12 +8,17 @@ import {
 } from '@constants';
 import { DocType } from '../../../../shared/types';
 import { GetDirectoryInfoFunction } from '../../../../shared/file-interface';
+import { ignoredDirectoryAndFile } from '../../../lib/components/constants';
 
 export type SelectedDirectoryState = {
   selectedDirectory?: string;
   selectedSubDirectoryOrFile?: string;
   selectedSubType?: 'directory' | 'file';
   selectedDirectoryInfo?: Awaited<ReturnType<GetDirectoryInfoFunction>>;
+  // Custom file order per directory: { [directoryPath]: [filePath1, filePath2, ...] }
+  fileOrder: {
+    [directoryPath: string]: string[];
+  };
 };
 
 export const loadDirectoryInfo = createAsyncThunk<
@@ -201,6 +206,25 @@ export const deleteDirectoryOrFile = createAsyncThunk<
 >('selectedDirectory/deleteDirectoryOrFile', async (path, thunkAPI) => {
   await Services.deleteDirectoryOrFile(path);
 
+  // Remove from order in parent directory
+  const parentDirectory = path.replace(/[^/]+$/, '').slice(0, -1);
+  thunkAPI.dispatch(
+    removeFileFromOrder({
+      directoryPath: parentDirectory,
+      filePath: path,
+    }),
+  );
+
+  // Also remove from order if it's a directory (remove all its children's orders)
+  const state = thunkAPI.getState().selectedDirectory;
+  const fileOrder = state.fileOrder;
+  Object.keys(fileOrder).forEach((dirPath) => {
+    if (dirPath.startsWith(path + '/') || dirPath === path) {
+      // This directory or its subdirectories are being deleted
+      // The order will be cleaned up naturally when directories are reloaded
+    }
+  });
+
   await thunkAPI.dispatch(fixSelectedSubDirectoryOrFile());
   await thunkAPI.dispatch(loadDirectoryInfo());
 });
@@ -219,6 +243,37 @@ export const renameDirectoryOrFile = createAsyncThunk<
       oldPath,
       newPath,
     });
+
+    // Update order in parent directory
+    const parentDirectory = oldPath.replace(/[^/]+$/, '').slice(0, -1);
+    const state = thunkAPI.getState().selectedDirectory;
+    const currentOrder = state.fileOrder[parentDirectory] || [];
+    const updatedOrder = currentOrder.map((path) =>
+      path === oldPath ? newPath : path,
+    );
+    if (updatedOrder.length > 0) {
+      thunkAPI.dispatch(
+        reorderFilesInDirectory({
+          directoryPath: parentDirectory,
+          orderedPaths: updatedOrder,
+        }),
+      );
+    }
+
+    // If it's a directory, update all orders that reference paths under it
+    Object.keys(state.fileOrder).forEach((dirPath) => {
+      if (dirPath.startsWith(oldPath + '/')) {
+        const newDirPath = dirPath.replace(oldPath, newPath);
+        const order = state.fileOrder[dirPath];
+        thunkAPI.dispatch(
+          reorderFilesInDirectory({
+            directoryPath: newDirPath,
+            orderedPaths: order.map((path) => path.replace(oldPath, newPath)),
+          }),
+        );
+      }
+    });
+
     await thunkAPI.dispatch(fixSelectedSubDirectoryOrFile());
     await thunkAPI.dispatch(loadDirectoryInfo());
   },
@@ -253,7 +308,7 @@ export const moveDirectoryOrFile = createAsyncThunk<
 );
 
 const initialState = {
-  dragToDirectories: {},
+  fileOrder: {},
   ...(USE_IN_MEMORY_FILE_SYSTEM
     ? {
         selectedDirectory: IN_MEMORY_FILE_SYSTEM_DEFAULT_FILE_PATH.split(
@@ -281,6 +336,53 @@ export const selectedDirectorySlice = createSlice({
       state.selectedSubDirectoryOrFile = action.payload.path;
       state.selectedSubType = action.payload.type;
     },
+    reorderFilesInDirectory: (
+      state,
+      action: PayloadAction<{
+        directoryPath: string;
+        orderedPaths: string[];
+      }>,
+    ) => {
+      state.fileOrder[action.payload.directoryPath] =
+        action.payload.orderedPaths;
+    },
+    removeFileFromOrder: (
+      state,
+      action: PayloadAction<{
+        directoryPath: string;
+        filePath: string;
+      }>,
+    ) => {
+      const order = state.fileOrder[action.payload.directoryPath];
+      if (order) {
+        state.fileOrder[action.payload.directoryPath] = order.filter(
+          (path) => path !== action.payload.filePath,
+        );
+      }
+    },
+    addFileToOrder: (
+      state,
+      action: PayloadAction<{
+        directoryPath: string;
+        filePath: string;
+        index?: number;
+      }>,
+    ) => {
+      const { directoryPath, filePath, index } = action.payload;
+      if (!state.fileOrder[directoryPath]) {
+        state.fileOrder[directoryPath] = [];
+      }
+      const order = state.fileOrder[directoryPath];
+      // Remove if already exists
+      const filteredOrder = order.filter((path) => path !== filePath);
+      // Add at specified index or at the end
+      if (index !== undefined && index >= 0 && index < filteredOrder.length) {
+        filteredOrder.splice(index, 0, filePath);
+      } else {
+        filteredOrder.push(filePath);
+      }
+      state.fileOrder[directoryPath] = filteredOrder;
+    },
     reset: () => initialState,
   },
   extraReducers: (builder) => {
@@ -294,9 +396,129 @@ export const selectedDirectorySlice = createSlice({
     });
     builder.addCase(loadDirectoryInfo.fulfilled, (state, action) => {
       state.selectedDirectoryInfo = action.payload;
+      // Automatically track all files in all directories and cleanup missing files
+      const trackDirectory = (dir: typeof action.payload) => {
+        if (!dir || !dir.children) {
+          return;
+        }
+        const dirPath = dir.path;
+        const currentOrder = state.fileOrder[dirPath] || [];
+        const currentOrderSet = new Set(currentOrder);
+
+        // Get all children paths
+        const allPaths = dir.children
+          .filter((child) => !ignoredDirectoryAndFile.includes(child.name))
+          .map((child) => child.path);
+        const allPathsSet = new Set(allPaths);
+
+        // Remove paths that no longer exist (cleanup missing files)
+        const cleanedOrder = currentOrder.filter((path) =>
+          allPathsSet.has(path),
+        );
+
+        // Add any missing paths to the order
+        const missingPaths = allPaths.filter(
+          (path) => !currentOrderSet.has(path),
+        );
+        if (missingPaths.length > 0) {
+          // Sort missing paths by default order (directories first, then alphabetically)
+          const sortedMissing = missingPaths.sort((a, b) => {
+            const childA = dir.children?.find((c) => c.path === a);
+            const childB = dir.children?.find((c) => c.path === b);
+            if (!childA || !childB) {
+              return 0;
+            }
+            const isDirA = !!childA.children;
+            const isDirB = !!childB.children;
+            if (isDirA && !isDirB) {
+              return -1;
+            }
+            if (!isDirA && isDirB) {
+              return 1;
+            }
+            return childA.name
+              .toLowerCase()
+              .localeCompare(childB.name.toLowerCase());
+          });
+
+          // Append missing paths to the end of the cleaned order
+          state.fileOrder[dirPath] = [...cleanedOrder, ...sortedMissing];
+        } else if (cleanedOrder.length !== currentOrder.length) {
+          // Only update if we removed some paths
+          state.fileOrder[dirPath] = cleanedOrder;
+        }
+
+        // Recursively track subdirectories
+        dir.children.forEach((child) => {
+          if (child.children) {
+            trackDirectory(child);
+          }
+        });
+      };
+      trackDirectory(action.payload);
     });
     builder.addCase(loadDirectoryInfoFromPath.fulfilled, (state, action) => {
       state.selectedDirectoryInfo = action.payload;
+      // Automatically track all files in all directories and cleanup missing files (same logic as loadDirectoryInfo)
+      const trackDirectory = (dir: typeof action.payload) => {
+        if (!dir || !dir.children) {
+          return;
+        }
+        const dirPath = dir.path;
+        const currentOrder = state.fileOrder[dirPath] || [];
+        const currentOrderSet = new Set(currentOrder);
+
+        // Get all children paths
+        const allPaths = dir.children
+          .filter((child) => !ignoredDirectoryAndFile.includes(child.name))
+          .map((child) => child.path);
+        const allPathsSet = new Set(allPaths);
+
+        // Remove paths that no longer exist (cleanup missing files)
+        const cleanedOrder = currentOrder.filter((path) =>
+          allPathsSet.has(path),
+        );
+
+        // Add any missing paths to the order
+        const missingPaths = allPaths.filter(
+          (path) => !currentOrderSet.has(path),
+        );
+        if (missingPaths.length > 0) {
+          // Sort missing paths by default order (directories first, then alphabetically)
+          const sortedMissing = missingPaths.sort((a, b) => {
+            const childA = dir.children?.find((c) => c.path === a);
+            const childB = dir.children?.find((c) => c.path === b);
+            if (!childA || !childB) {
+              return 0;
+            }
+            const isDirA = !!childA.children;
+            const isDirB = !!childB.children;
+            if (isDirA && !isDirB) {
+              return -1;
+            }
+            if (!isDirA && isDirB) {
+              return 1;
+            }
+            return childA.name
+              .toLowerCase()
+              .localeCompare(childB.name.toLowerCase());
+          });
+
+          // Append missing paths to the end of the cleaned order
+          state.fileOrder[dirPath] = [...cleanedOrder, ...sortedMissing];
+        } else if (cleanedOrder.length !== currentOrder.length) {
+          // Only update if we removed some paths
+          state.fileOrder[dirPath] = cleanedOrder;
+        }
+
+        // Recursively track subdirectories
+        dir.children.forEach((child) => {
+          if (child.children) {
+            trackDirectory(child);
+          }
+        });
+      };
+      trackDirectory(action.payload);
     });
     builder.addCase(
       fixSelectedSubDirectoryOrFile.fulfilled,
@@ -310,7 +532,12 @@ export const selectedDirectorySlice = createSlice({
   },
 });
 
-export const { setSelectedSubDirectoryOrFile, reset } =
-  selectedDirectorySlice.actions;
+export const {
+  setSelectedSubDirectoryOrFile,
+  reorderFilesInDirectory,
+  removeFileFromOrder,
+  addFileToOrder,
+  reset,
+} = selectedDirectorySlice.actions;
 
 export default selectedDirectorySlice.reducer;

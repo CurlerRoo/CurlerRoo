@@ -19,6 +19,31 @@ export type BufferEncoding =
   | 'binary'
   | 'hex';
 
+export type CurlResponseOutput = {
+  protocol: string;
+  headers: { [key: string]: string };
+  status: number;
+  bodyFilePath: string;
+  bodyBase64: string;
+  body: string[];
+  formattedBody: string; // this is useful for copying to clipboard
+  searchClickedAt?: number;
+  responseDate: number;
+};
+
+export type CurlSendHistory = {
+  id: string;
+  sentAt: number;
+  request: {
+    source: string[];
+    pre_scripts: string[];
+    post_scripts: string[];
+    pre_scripts_enabled: boolean;
+    post_scripts_enabled: boolean;
+  };
+  outputs: CurlResponseOutput[];
+};
+
 export type CurlCellType = {
   id: string;
   cell_type: 'curl';
@@ -35,17 +60,9 @@ export type CurlCellType = {
       source_hidden: boolean;
     };
   };
-  outputs: {
-    protocol: string;
-    headers: { [key: string]: string };
-    status: number;
-    bodyFilePath: string;
-    bodyBase64: string;
-    body: string[];
-    formattedBody: string; // this is useful for copying to clipboard
-    searchClickedAt?: number;
-    responseDate: number;
-  }[];
+  outputs: CurlResponseOutput[];
+  sendHistories: CurlSendHistory[];
+  selectedSendHistoryId?: string;
 
   source: string[];
   send_status: 'idle' | 'sending' | 'success' | 'error';
@@ -91,6 +108,36 @@ export const docCellSchema = z.object({
       responseDate: z.number().default(0),
     }),
   ),
+  sendHistories: z
+    .array(
+      z.object({
+        id: z.string(),
+        sentAt: z.number().default(0),
+        request: z.object({
+          source: z.array(z.string()).default(['']),
+          pre_scripts: z.array(z.string()).default(['']),
+          post_scripts: z.array(z.string()).default(['']),
+          pre_scripts_enabled: z.boolean().default(false),
+          post_scripts_enabled: z.boolean().default(false),
+        }),
+        outputs: z.array(
+          z.object({
+            protocol: z.string(),
+            headers: z.record(z.string(), z.string()),
+            status: z.number(),
+            bodyFilePath: z.string().default(''),
+            body: z.array(z.string()),
+            bodyBase64: z.string().default(''),
+            formattedBody: z.string().default(''),
+            searchClickedAt: z.number().optional(),
+            responseDate: z.number().default(0),
+          }),
+        ),
+      }),
+    )
+    .optional()
+    .default([]),
+  selectedSendHistoryId: z.string().optional(),
   source: z.array(z.string()),
   pre_scripts_enabled: z.boolean().default(false),
   pre_scripts: z.array(z.string()),
@@ -140,6 +187,36 @@ export const docOnDiskCellSchema = z.object({
       responseDate: z.number(),
     }),
   ),
+  sendHistories: z
+    .array(
+      z.object({
+        id: z.string(),
+        sentAt: z.number(),
+        request: z.object({
+          source: z.array(z.string()).default(['']),
+          pre_scripts: z.array(z.string()).default(['']),
+          post_scripts: z.array(z.string()).default(['']),
+          pre_scripts_enabled: z.boolean().default(false),
+          post_scripts_enabled: z.boolean().default(false),
+        }),
+        outputs: z.array(
+          z.object({
+            protocol: z.string(),
+            headers: z.record(z.string(), z.string()),
+            status: z.number(),
+            bodyFilePath: z.string().optional(),
+            bodyBase64: z.string().optional(),
+            body: z.array(z.string()),
+            responseDate: z.number(),
+            formattedBody: z.string().optional(),
+            searchClickedAt: z.number().optional(),
+          }),
+        ),
+      }),
+    )
+    .optional()
+    .default([]),
+  selectedResponseHistoryId: z.string().optional(),
   source: z.array(z.string()),
   pre_scripts_enabled: z.boolean().default(false),
   pre_scripts: z.array(z.string()).default(['']),

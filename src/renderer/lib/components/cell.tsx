@@ -49,8 +49,8 @@ import { debugLog } from '../../../shared/utils';
 import { TextButton } from './text-button';
 import { getCurlWithValue } from '../../../shared/get-curl-with-value';
 
-let curlCellBeforeMountInitialized = false;
-let scriptCellBeforeMountInitialized = false;
+// Ensure we only register the curl completion provider once per session.
+let curlCompletionProviderRegistered = false;
 
 // Shared helper functions for Monaco editor themes
 type ThemeColors = (typeof COLORS)['LIGHT_MODE'];
@@ -311,11 +311,6 @@ const Script = ({
       <div style={{ height: 5 }} />
       <Editor
         beforeMount={(_monaco) => {
-          if (scriptCellBeforeMountInitialized) {
-            return;
-          }
-          scriptCellBeforeMountInitialized = true;
-
           _monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
             {
               noSemanticValidation: true,
@@ -845,11 +840,6 @@ export function Cell({
             // force remount if the cell position is changed
             key={cellIndex}
             beforeMount={(_monaco) => {
-              if (curlCellBeforeMountInitialized) {
-                return;
-              }
-              curlCellBeforeMountInitialized = true;
-
               _monaco.languages.register({ id: 'curl' });
               _monaco.languages.setLanguageConfiguration('curl', {
                 comments: {
@@ -1112,10 +1102,13 @@ export function Cell({
                 },
               });
               // no need to dispose
-              _monaco.languages.registerCompletionItemProvider(
-                'curl',
-                new CurlCompletionItemProvider(),
-              );
+              if (!curlCompletionProviderRegistered) {
+                _monaco.languages.registerCompletionItemProvider(
+                  'curl',
+                  new CurlCompletionItemProvider(),
+                );
+                curlCompletionProviderRegistered = true;
+              }
 
               // Define the theme *before* the editor first paints (prevents white flash in dark mode).
               _monaco.editor.defineTheme('curl', {

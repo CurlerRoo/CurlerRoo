@@ -8,6 +8,11 @@ export type DragState = {
   dragToCells: {
     [key: string]: number;
   };
+  // Track drag position for reordering within same directory
+  dragOverItemPath?: string;
+  dragOverItemIndex?: number;
+  // Track whether to drop above or below the item ('above' | 'below' | undefined)
+  dragDropPosition?: 'above' | 'below';
 };
 
 const initialState = {
@@ -24,6 +29,28 @@ export const dragSlice = createSlice({
       // reset dragToDirectories when dragFromDirectory is set
       state.dragToDirectories = {};
       state.dragToCells = {};
+      state.dragOverItemPath = undefined;
+      state.dragOverItemIndex = undefined;
+    },
+    setDragOverItem: (
+      state,
+      action: PayloadAction<{
+        itemPath?: string;
+        itemIndex?: number;
+        dropPosition?: 'above' | 'below';
+      }>,
+    ) => {
+      state.dragOverItemPath = action.payload.itemPath;
+      state.dragOverItemIndex = action.payload.itemIndex;
+      state.dragDropPosition = action.payload.dropPosition;
+    },
+    resetDrag: (state) => {
+      state.dragFromDirectory = undefined;
+      state.dragToDirectories = {};
+      state.dragToCells = {};
+      state.dragOverItemPath = undefined;
+      state.dragOverItemIndex = undefined;
+      state.dragDropPosition = undefined;
     },
     addDragToDirectories: (state, action: PayloadAction<string>) => {
       state.dragToDirectories = {
@@ -63,9 +90,11 @@ export const {
   addDragToDirectories,
   removeDragToDirectories,
   setDragFromDirectory,
+  setDragOverItem,
   addDragToCells,
   removeDragToCells,
   reset,
+  resetDrag,
 } = dragSlice.actions;
 
 export default dragSlice.reducer;

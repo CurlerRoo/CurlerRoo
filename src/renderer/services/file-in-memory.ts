@@ -110,6 +110,16 @@ const stripeBodyBase64FromDoc = (doc: DocOnDiskType): DocOnDiskType => {
         ...output,
         bodyBase64: '',
       })),
+      sendHistories: (cell.sendHistories || []).map((history) => ({
+        ...history,
+        request: {
+          ...history.request,
+        },
+        outputs: history.outputs.map((output) => ({
+          ...output,
+          bodyBase64: '',
+        })),
+      })),
     })),
   };
 };
@@ -188,6 +198,8 @@ const saveFileSystemToLocalStorage = async () => {
               formattedBody: '',
             },
           ],
+          sendHistories: [],
+          selectedResponseHistoryId: undefined,
         })),
       });
     }

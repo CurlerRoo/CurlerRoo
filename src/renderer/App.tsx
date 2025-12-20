@@ -19,6 +19,7 @@ import { Cell } from './lib/components/cell';
 import { CellResponses } from './lib/components/response/cell-response';
 import { NavBar } from './lib/components/nav-bar';
 import { FileList } from './lib/components/file-list';
+import { ImagePreview } from './lib/components/image-preview';
 import { ColorfulButton } from './lib/components/variable-list';
 import { ShowVariablesTutorialLevel1 } from './lib/components/variables-tutorial';
 import { AppConsent } from './lib/components/app-consent';
@@ -103,6 +104,9 @@ function HomeCells() {
 
   const { selectedDirectory, selectedSubDirectoryOrFile } = useSelector(
     (state: RootState) => state.selectedDirectory,
+  );
+  const selectedSubType = useSelector(
+    (state: RootState) => state.selectedDirectory.selectedSubType,
   );
 
   if (!selectedDirectory) {
@@ -212,6 +216,20 @@ function HomeCells() {
     activeCellIndex == null ||
     executingAllCells == null
   ) {
+    // Check if it's an image file that should be previewed
+    const isImageFile =
+      selectedSubType === 'file' &&
+      selectedSubDirectoryOrFile?.match(/\.(png|jpe?g|gif|webp|bmp|svg)$/i);
+
+    if (isImageFile) {
+      return (
+        <ImagePreview
+          filePath={selectedSubDirectoryOrFile}
+          fileType={selectedSubType}
+        />
+      );
+    }
+
     return (
       <div
         style={{
@@ -431,6 +449,8 @@ function HomeCells() {
                                 formattedBody: '',
                               },
                             ],
+                            sendHistories: [],
+                            selectedSendHistoryId: undefined,
                             source: [''],
                             pre_scripts_enabled: false,
                             pre_scripts: [''],
@@ -456,6 +476,7 @@ function HomeCells() {
 }
 
 function HomeCellResponse() {
+  const colors = useColors();
   const activeDocument = useSelector(
     (state: RootState) => state.activeDocument,
   );
@@ -463,7 +484,14 @@ function HomeCellResponse() {
   const activeCellIndex = activeDocument?.activeCellIndex;
 
   if (!cells || activeCellIndex === undefined || !cells[activeCellIndex]) {
-    return null;
+    return (
+      <div
+        style={{
+          backgroundColor: `#${colors.SURFACE_SECONDARY}`,
+          height: '100%',
+        }}
+      />
+    );
   }
 
   return (

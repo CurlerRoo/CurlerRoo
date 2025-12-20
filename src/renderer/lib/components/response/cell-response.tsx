@@ -20,6 +20,7 @@ import {
   setSearchClickedAt,
   addVariable,
   appendToCellPostScript,
+  selectResponseHistory,
 } from '../../../state/features/documents/active-document';
 import { CurlCellType } from '../../../../shared/types';
 import { JsonTreeResponse } from './json-tree-response';
@@ -484,7 +485,37 @@ export function CellResponses({
   const dispatch = useDispatch();
   const colors = useColors();
   const { theme } = useTheme();
-  const output = _.last(cell.outputs)!;
+  const sendHistories = cell.sendHistories || [];
+  const latestHistory =
+    _.maxBy(sendHistories, (history) => history.sentAt || 0) ||
+    sendHistories[sendHistories.length - 1];
+  const selectedHistoryId =
+    cell.selectedSendHistoryId &&
+    sendHistories.some((history) => history.id === cell.selectedSendHistoryId)
+      ? cell.selectedSendHistoryId
+      : latestHistory?.id;
+  const selectedHistory =
+    sendHistories.find((history) => history.id === selectedHistoryId) ||
+    latestHistory;
+  const sortedHistories = [...sendHistories].sort(
+    (a, b) => (b.sentAt || 0) - (a.sentAt || 0),
+  );
+  const displayedOutputs =
+    selectedHistory?.outputs?.length && selectedHistory.outputs.length > 0
+      ? selectedHistory.outputs
+      : cell.outputs;
+  const output = _.last(displayedOutputs) || {
+    protocol: '',
+    headers: {},
+    status: 0,
+    bodyFilePath: '',
+    bodyBase64: '',
+    body: [''],
+    formattedBody: '',
+    responseDate: 0,
+  };
+  const historySelectValue =
+    selectedHistory?.id || sendHistories[sendHistories.length - 1]?.id || '';
 
   const { selectedHandlerType, setSelectedHandlerType, handlerTypes } =
     useResponseHandler({
@@ -501,13 +532,13 @@ export function CellResponses({
   );
 
   const headersText = useMemo(
-    () => formatHeadersAsText(cell.outputs),
-    [cell.outputs],
+    () => formatHeadersAsText(displayedOutputs),
+    [displayedOutputs],
   );
 
   const headersDecorations = useMemo(
-    () => createHeadersDecorations(cell.outputs),
-    [cell.outputs],
+    () => createHeadersDecorations(displayedOutputs),
+    [displayedOutputs],
   );
 
   const codeMirrorTheme = useCodeMirrorTheme();
@@ -598,7 +629,7 @@ export function CellResponses({
   const headersContextMenu = useHeadersContextMenu({
     headersStatisticsRef,
     headersCodeMirrorRef,
-    outputs: cell.outputs,
+    outputs: displayedOutputs,
     onClickCreateVariable,
   });
 
@@ -615,7 +646,7 @@ export function CellResponses({
   }, [cell?.send_status]);
 
   useEffect(() => {
-    const elementId = `output-${cell.outputs.length - 1}`;
+    const elementId = `output-${displayedOutputs.length - 1}`;
     const element = document.getElementById(elementId);
     // setTimeout may not be necessary, but it's here to ensure that the element is rendered
     // The last time I tested it, it was unnecessary. But I'm leaving it here just in case.
@@ -626,17 +657,17 @@ export function CellResponses({
         inline: 'start',
       });
     }, 0);
-  }, [cell.outputs]);
+  }, [displayedOutputs]);
 
   // Scroll CodeMirror headers editor to the latest output block
   useEffect(() => {
     const codeMirrorView = headersCodeMirrorRef.current?.view;
     if (!codeMirrorView) return;
-    if (cell.outputs.length === 0) return;
+    if (displayedOutputs.length === 0) return;
 
     const lineNumber = getHeaderBlockStartLine(
-      cell.outputs,
-      cell.outputs.length - 1,
+      displayedOutputs,
+      displayedOutputs.length - 1,
     );
 
     setTimeout(() => {
@@ -651,7 +682,7 @@ export function CellResponses({
         }),
       });
     }, 0);
-  }, [headersCodeMirrorRef.current?.view, cell.outputs, headersText]);
+  }, [headersCodeMirrorRef.current?.view, displayedOutputs, headersText]);
 
   if (!cell) {
     return null;
@@ -665,7 +696,7 @@ export function CellResponses({
 
   return (
     <div
-      key={`${activeCellIndex}-${_.last(cell.outputs)?.responseDate}`}
+      key={`${activeCellIndex}-${historySelectValue}-${output.responseDate}`}
       tabIndex={0}
       style={{
         position: 'relative',
@@ -727,18 +758,69 @@ export function CellResponses({
             height: 'calc(100% - 24px)',
           }}
         >
-          <TextButton
-            icon={VscClearAll}
-            onClick={() => {
-              dispatch(
-                clearOutputs({
-                  cellIndex: activeCellIndex,
-                }),
-              );
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 10,
             }}
           >
-            Clear
-          </TextButton>
+            <TextButton
+              icon={VscClearAll}
+              onClick={() => {
+                dispatch(
+                  clearOutputs({
+                    cellIndex: activeCellIndex,
+                  }),
+                );
+              }}
+            >
+              Clear
+            </TextButton>
+            {sendHistories.length > 1 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: `#${colors.TEXT_PRIMARY}`,
+                }}
+              >
+                <span style={{ color: `#${colors.TEXT_SECONDARY}` }}>
+                  History
+                </span>
+                <select
+                  value={historySelectValue}
+                  onChange={(e) => {
+                    dispatch(
+                      selectResponseHistory({
+                        cellIndex: activeCellIndex,
+                        historyId: e.target.value,
+                      }),
+                    );
+                  }}
+                  style={{
+                    backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+                    color: `#${colors.TEXT_PRIMARY}`,
+                    border: `1px solid #${colors.BORDER}`,
+                    borderRadius: 4,
+                    height: 28,
+                  }}
+                >
+                  {sortedHistories.map((history, index) => (
+                    <option key={history.id} value={history.id}>
+                      {`#${sortedHistories.length - index} • ${new Date(
+                        history.sentAt ||
+                          history.outputs?.[0]?.responseDate ||
+                          0,
+                      ).toLocaleString()}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
           <div style={{ height: 10 }} />
           <div
             style={{

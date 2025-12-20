@@ -8,6 +8,7 @@ import { AppDispatch, RootState } from '../../state/store';
 import {
   allowAnalytics,
   setWordWrappingInEditor,
+  setMaxSendHistoryEntries,
 } from '../../state/features/user/user';
 import {
   APP_VERSION,
@@ -153,15 +154,18 @@ export function SettingsModalContent() {
   const dispatch: AppDispatch = useDispatch();
   const { preference, setPreference } = useTheme();
   const colors = useColors();
-  const { allowedAnalytics, wordWrappingInEditor } = useSelector(
-    (state: RootState) => state.user,
-  );
+  const { allowedAnalytics, wordWrappingInEditor, maxSendHistoryEntries } =
+    useSelector((state: RootState) => state.user);
   useEffect(() => {
     if (wordWrappingInEditor === undefined) {
       // Set default value to true if unset (user upgrading from older version)
       dispatch(setWordWrappingInEditor(true));
     }
-  }, [dispatch, wordWrappingInEditor]);
+    if (maxSendHistoryEntries === undefined) {
+      // Set default value to 20 if unset (user upgrading from older version)
+      dispatch(setMaxSendHistoryEntries(20));
+    }
+  }, [dispatch, wordWrappingInEditor, maxSendHistoryEntries]);
   const { downloadUpdatesProgress, updateStatus } = useSelector(
     (state: RootState) => state.updates,
   );
@@ -439,6 +443,42 @@ export function SettingsModalContent() {
           }}
         />
         <div>Enable word wrap in the editor</div>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <label
+          htmlFor="max-history-entries"
+          style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+        >
+          <span>Max send history entries per cell:</span>
+          <input
+            id="max-history-entries"
+            type="number"
+            min="1"
+            max="100"
+            value={String(maxSendHistoryEntries ?? 20)}
+            onChange={(e) => {
+              const value = parseInt(e.target.value, 10);
+              if (!Number.isNaN(value) && value >= 1 && value <= 100) {
+                dispatch(setMaxSendHistoryEntries(value));
+              }
+            }}
+            style={{
+              width: 60,
+              padding: 4,
+              border: `1px solid #${colors.BORDER}`,
+              borderRadius: 4,
+              backgroundColor: `#${colors.SURFACE_PRIMARY}`,
+              color: `#${colors.TEXT_PRIMARY}`,
+            }}
+          />
+        </label>
       </div>
       {ENABLE_TELEMETRY_FEATURE && (
         <div
